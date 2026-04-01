@@ -53,7 +53,8 @@ public class ClimbingManager : MonoBehaviour
     private void StartClimbing(OVRController hand)
     {
         if (isClimbing && activateHand == hand) return;
-        Debug.Log("startin climbing ");
+        Debug.Log("the " + hand.hand + " is climbing");
+        Debug.Log("the grip button is " + hand.gripButton);
         isClimbing = true;
         activateHand = hand;
 
@@ -72,12 +73,14 @@ public class ClimbingManager : MonoBehaviour
     {
         if (activateHand == null) return;
 
-        Debug.Log("climbing movment");
+        // Debug.Log("climbing movment");
         Vector3 currentHandPos = activateHand.GetPosition();
         Vector3 handDelta = currentHandPos - lastHandPosition;
 
         velocity = -handDelta * climbForce;
         velocity = Vector3.ClampMagnitude(velocity, maxVelocity);
+
+        // Debug.Log(currentHandPos);
 
         cameraRig.position += velocity;
 

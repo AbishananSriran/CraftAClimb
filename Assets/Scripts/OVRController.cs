@@ -19,6 +19,9 @@ public class OVRController : MonoBehaviour
 
     void Awake()
     {
+        Debug.Log("this is the " + hand + " hand");
+        Debug.Log("the grip button is " + gripButton);
+
         controllerAnchor = transform.parent.gameObject.transform;
     }
 
@@ -57,10 +60,11 @@ public class OVRController : MonoBehaviour
 
         var ctrl = (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
         bool grip = OVRInput.Get(gripButton, ctrl);
-      
+
         // If grip trigger held and we haven't already set up grip  
         if (grip && !gripping)
         {
+            Debug.Log("the " + hand + " is gripping");
             gripping = true;
             grippedItem = interactable;
             grippedItem.OnGripBegin(this);
