@@ -13,6 +13,11 @@ public class ClimbingManager : MonoBehaviour
     [SerializeField] private float climbForce = 1.0f;
     [SerializeField] private float maxVelocity = 5.0f;
 
+    [SerializeField] float smoothFactor = 0.2f;
+    [SerializeField] float deadzone = 0.002f;
+    [SerializeField] float maxDelta = 0.1f;
+    Vector3 smoothedDelta;
+
     private bool isClimbing = false;
     private OVRController activateHand = null;
 
@@ -53,12 +58,12 @@ public class ClimbingManager : MonoBehaviour
     private void StartClimbing(OVRController hand)
     {
         if (isClimbing && activateHand == hand) return;
-        Debug.Log("the " + hand.hand + " is climbing");
-        Debug.Log("the grip button is " + hand.gripButton);
+        
         isClimbing = true;
         activateHand = hand;
 
-        lastHandPosition = hand.GetPosition();
+        lastHandPosition = activateHand.GetPosition();
+        smoothedDelta = Vector3.zero;
     }
 
     private void StopClimbing()
@@ -70,21 +75,28 @@ public class ClimbingManager : MonoBehaviour
     }
 
     private void ApplyClimbingMovement()
-    {
-        if (activateHand == null) return;
+{
+    if (activateHand == null) return;
 
-        // Debug.Log("climbing movment");
-        Vector3 currentHandPos = activateHand.GetPosition();
-        Vector3 handDelta = currentHandPos - lastHandPosition;
+    Vector3 currentHandPos = activateHand.GetPosition();
+    Vector3 rawDelta = currentHandPos - lastHandPosition;
 
-        velocity = -handDelta * climbForce;
-        velocity = Vector3.ClampMagnitude(velocity, maxVelocity);
+    // 1. Deadzone (kill micro jitter)
+    if (rawDelta.magnitude < deadzone)
+        rawDelta = Vector3.zero;
 
-        // Debug.Log(currentHandPos);
+    // 2. Clamp sudden spikes
+    rawDelta = Vector3.ClampMagnitude(rawDelta, maxDelta);
 
-        cameraRig.position += velocity;
+    // 3. Smooth the movement
+    smoothedDelta = Vector3.Lerp(smoothedDelta, rawDelta, smoothFactor);
 
-        lastHandPosition = currentHandPos;
+    // 4. Apply movement
+    Vector3 move = -smoothedDelta * climbForce;
+    move = Vector3.ClampMagnitude(move, maxVelocity);
 
-    }
+    cameraRig.position += move;
+
+    lastHandPosition = currentHandPos;
+}
 }

@@ -15,7 +15,7 @@ public class OVRController : MonoBehaviour
         (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
 
     public Transform controllerAnchor;
-    static bool gripping;
+    bool gripping;
 
     void Awake()
     {
@@ -27,10 +27,11 @@ public class OVRController : MonoBehaviour
 
     void Update()
     {
-        // Release gripped item on grip release
-        var ctrl = (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
-                
-        if (grippedItem != null && OVRInput.GetUp(gripButton, ctrl))
+        // // Release gripped item on grip release
+
+        float grip = GetGripValue();
+
+        if (grippedItem != null && grip < 0.1f && gripping)
         {
             Debug.Log("Release grip");
             grippedItem.OnGripEnd(this);
@@ -58,11 +59,13 @@ public class OVRController : MonoBehaviour
         // Already gripping it
         if (grippedItem == interactable) return;
 
-        var ctrl = (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
-        bool grip = OVRInput.Get(gripButton, ctrl);
+        // var ctrl = (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
+        // bool grip = OVRInput.Get(gripButton, ctrl);
+        float grip = GetGripValue();
+        bool IsGrippingNow = grip > 0.5f;
 
         // If grip trigger held and we haven't already set up grip  
-        if (grip && !gripping)
+        if (IsGrippingNow && !gripping)
         {
             Debug.Log("the " + hand + " is gripping");
             gripping = true;
@@ -81,8 +84,16 @@ public class OVRController : MonoBehaviour
         if (gripping && grippedItem != null)
         {
             grippedItem.OnGripEnd(this);
+            grippedItem = null;
             gripping = false;
         }
+    }
+
+    float GetGripValue()
+    {
+        return (hand == Hand.Left)
+            ? OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger)
+            : OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
     }
 
     public bool IsGripping()
