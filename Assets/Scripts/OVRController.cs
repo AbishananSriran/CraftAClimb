@@ -11,11 +11,16 @@ public class OVRController : MonoBehaviour
     // 
     public Interactable touchedItem;
     public Interactable grippedItem;
+    public Vector3 grippedNormal;
+    public bool ctrlAnchored = false;
+    public Vector3 ctrlOffset;
+
     OVRInput.Controller Ctrl =>
         (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
 
     public Transform controllerAnchor;
     bool gripping;
+    
 
     void Awake()
     {
@@ -37,7 +42,14 @@ public class OVRController : MonoBehaviour
             grippedItem.OnGripEnd(this);
             grippedItem = null;
             gripping = false;
+            ctrlAnchored = false;
         }
+
+        if (gripping && grippedItem != null && ctrlAnchored)
+        {
+            transform.position = grippedItem.transform.position + ctrlOffset;
+        }
+
     }
 
     private void OnTriggerEnter(Collider other)
@@ -45,6 +57,8 @@ public class OVRController : MonoBehaviour
         if (other.attachedRigidbody == null) return;
         //Debug.Log("Collided with Dial");
         var interactable = other.attachedRigidbody.GetComponent<Interactable>();
+        grippedNormal = interactable.GetNormal();
+
         if (interactable == null || !interactable.enabled) return;
        
     }
@@ -54,23 +68,29 @@ public class OVRController : MonoBehaviour
     {
         if (other.attachedRigidbody == null) return;
         var interactable = other.attachedRigidbody.GetComponent<Interactable>();
+        grippedNormal = interactable.GetNormal();
+
         if (interactable == null || !interactable.enabled) return;
        
         // Already gripping it
         if (grippedItem == interactable) return;
 
-        // var ctrl = (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
-        // bool grip = OVRInput.Get(gripButton, ctrl);
+        OVRInput.Controller ctrl = (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
         float grip = GetGripValue();
         bool IsGrippingNow = grip > 0.5f;
 
         // If grip trigger held and we haven't already set up grip  
         if (IsGrippingNow && !gripping)
         {
-            Debug.Log("the " + hand + " is gripping");
             gripping = true;
             grippedItem = interactable;
             grippedItem.OnGripBegin(this);
+
+            Vector3 handPos = OVRInput.GetLocalControllerPosition(ctrl);
+            ctrlOffset = handPos - grippedItem.transform.position;
+            ctrlAnchored = true;
+
+            transform.position = grippedItem.transform.position + ctrlOffset;
         }
         
     }

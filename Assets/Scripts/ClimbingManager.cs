@@ -23,6 +23,7 @@ public class ClimbingManager : MonoBehaviour
 
     private Vector3 lastHandPosition;
     private Vector3 velocity;
+    private Vector3 climbNormal;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -74,29 +75,80 @@ public class ClimbingManager : MonoBehaviour
         activateHand = null;
     }
 
+    // private void ApplyClimbingMovement()
+    // {
+    //     if (activateHand == null) return;
+
+    //     Vector3 currentHandPos = activateHand.GetPosition();
+    //     Vector3 rawDelta = currentHandPos - lastHandPosition;
+    //     rawDelta = Vector3.ProjectOnPlane(rawDelta, -activateHand.grippedNormal);
+
+    //     // 1. Deadzone (kill micro jitter)
+    //     if (rawDelta.magnitude < deadzone)
+    //         rawDelta = Vector3.zero;
+
+    //     // 2. Clamp sudden spikes
+    //     rawDelta = Vector3.ClampMagnitude(rawDelta, maxDelta);
+
+    //     // 3. Smooth the movement
+    //     smoothedDelta = Vector3.Lerp(smoothedDelta, rawDelta, smoothFactor);
+
+    //     // 4. Apply movement
+    //     Vector3 move = -smoothedDelta * climbForce;
+    //     move = Vector3.ClampMagnitude(move, maxVelocity);
+
+    //     cameraRig.position += move;
+
+    //     lastHandPosition = currentHandPos;
+    // }
+
     private void ApplyClimbingMovement()
-{
-    if (activateHand == null) return;
+    {
+        if (activateHand == null || activateHand.grippedItem == null) return;
 
-    Vector3 currentHandPos = activateHand.GetPosition();
-    Vector3 rawDelta = currentHandPos - lastHandPosition;
+        // Get the target hand position relative to the hold
+        Vector3 holdPos = activateHand.grippedItem.transform.position;
 
-    // 1. Deadzone (kill micro jitter)
-    if (rawDelta.magnitude < deadzone)
-        rawDelta = Vector3.zero;
+        // If this is the first frame of gripping, anchor the hand
+        if (!activateHand.ctrlAnchored)
+        {
+            activateHand.ctrlOffset = activateHand.GetPosition() - holdPos;
+            activateHand.ctrlAnchored = true;
+            smoothedDelta = Vector3.zero;
+            lastHandPosition = holdPos + activateHand.ctrlOffset;
+            return; // wait one frame to initialize
+        }
 
-    // 2. Clamp sudden spikes
-    rawDelta = Vector3.ClampMagnitude(rawDelta, maxDelta);
+        // Target hand position = hold + offset
+        Vector3 targetHandPos = holdPos + activateHand.ctrlOffset;
 
-    // 3. Smooth the movement
-    smoothedDelta = Vector3.Lerp(smoothedDelta, rawDelta, smoothFactor);
+        // Compute hand delta (how far the tracked hand tried to move)
+        Vector3 handDelta = targetHandPos - lastHandPosition;
 
-    // 4. Apply movement
-    Vector3 move = -smoothedDelta * climbForce;
-    move = Vector3.ClampMagnitude(move, maxVelocity);
+        // Project onto wall plane so no forward/back movement
+        handDelta = Vector3.ProjectOnPlane(handDelta, activateHand.grippedNormal);
 
-    cameraRig.position += move;
+        // 1. Deadzone
+        if (handDelta.magnitude < deadzone)
+            handDelta = Vector3.zero;
 
-    lastHandPosition = currentHandPos;
-}
+        // 2. Clamp sudden spikes
+        handDelta = Vector3.ClampMagnitude(handDelta, maxDelta);
+
+        // 3. Smooth
+        smoothedDelta = Vector3.Lerp(smoothedDelta, handDelta, smoothFactor);
+
+        // 4. Move the body opposite to hand delta
+        Vector3 move = -smoothedDelta * climbForce;
+
+        // 5. Clamp velocity
+        move = Vector3.ClampMagnitude(move, maxVelocity);
+
+        // 6. Apply movement via Rigidbody or transform
+        cameraRig.position += move;
+
+        // 7. Update last hand position
+        lastHandPosition = targetHandPos;
+    }
+
 }
