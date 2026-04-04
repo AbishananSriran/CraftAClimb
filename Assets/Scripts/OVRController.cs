@@ -51,7 +51,7 @@ public class OVRController : MonoBehaviour
         if (other.attachedRigidbody == null) return;
         //Debug.Log("Collided with Dial");
         var interactable = other.attachedRigidbody.GetComponent<Interactable>();
-        grippedNormal = interactable.GetNormal();
+        grippedNormal = interactable.GetComponentInParent<Transform>().transform.forward;
 
         if (interactable == null || !interactable.enabled) return;
 
@@ -62,7 +62,8 @@ public class OVRController : MonoBehaviour
     {
         if (other.attachedRigidbody == null) return;
         var interactable = other.attachedRigidbody.GetComponent<Interactable>();
-        grippedNormal = interactable.GetNormal();
+        grippedNormal = interactable.GetComponentInParent<Transform>().transform.forward;
+
 
         if (interactable == null || !interactable.enabled) return;
 

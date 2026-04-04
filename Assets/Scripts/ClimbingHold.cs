@@ -10,6 +10,8 @@ public class ClimbingHold : Interactable
     [Header("Haptics (optional)")]
     public bool haptics = true;
 
+    public bool IsGrabbed { get; private set; }
+
     // --- internal state ---
     OVRController controller;
 
@@ -23,14 +25,14 @@ public class ClimbingHold : Interactable
 
     void Start()
     {
-        
+
     }
 
     public override void OnGripBegin(OVRController ctrl)
     {
         controller = ctrl;
 
-        Debug.Log("Gripping hold");
+        IsGrabbed = true;
 
         if (haptics) controller.HapticClick(0.15f, 0.02f); // small grab tick
     }
@@ -39,13 +41,14 @@ public class ClimbingHold : Interactable
     {
         if (controller != ctrl) return;
         controller = null;
+        IsGrabbed = false;
     }
 
     void Update()
     {
         if (controller == null) return;
 
-        
+
     }
 
     // ---------------- Helper Methods ----------------
