@@ -20,7 +20,7 @@ public class OVRController : MonoBehaviour
 
     public Transform controllerAnchor;
     bool gripping;
-    
+
 
     void Awake()
     {
@@ -44,12 +44,6 @@ public class OVRController : MonoBehaviour
             gripping = false;
             ctrlAnchored = false;
         }
-
-        if (gripping && grippedItem != null && ctrlAnchored)
-        {
-            transform.position = grippedItem.transform.position + ctrlOffset;
-        }
-
     }
 
     private void OnTriggerEnter(Collider other)
@@ -60,7 +54,7 @@ public class OVRController : MonoBehaviour
         grippedNormal = interactable.GetNormal();
 
         if (interactable == null || !interactable.enabled) return;
-       
+
     }
 
     // Gripping setup is placed here as user might touch component then press grip trigger
@@ -71,11 +65,11 @@ public class OVRController : MonoBehaviour
         grippedNormal = interactable.GetNormal();
 
         if (interactable == null || !interactable.enabled) return;
-       
+
         // Already gripping it
         if (grippedItem == interactable) return;
 
-        OVRInput.Controller ctrl = (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
+        // OVRInput.Controller ctrl = (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
         float grip = GetGripValue();
         bool IsGrippingNow = grip > 0.5f;
 
@@ -86,13 +80,10 @@ public class OVRController : MonoBehaviour
             grippedItem = interactable;
             grippedItem.OnGripBegin(this);
 
-            Vector3 handPos = OVRInput.GetLocalControllerPosition(ctrl);
-            ctrlOffset = handPos - grippedItem.transform.position;
+            ctrlOffset = GetPosition() - grippedItem.transform.position;
             ctrlAnchored = true;
-
-            transform.position = grippedItem.transform.position + ctrlOffset;
         }
-        
+
     }
 
     private void OnTriggerExit(Collider other)
@@ -100,12 +91,13 @@ public class OVRController : MonoBehaviour
         if (other.attachedRigidbody == null) return;
         var interactable = other.attachedRigidbody.GetComponent<Interactable>();
         if (interactable == null || !interactable.enabled) return;
-        
+
         if (gripping && grippedItem != null)
         {
             grippedItem.OnGripEnd(this);
             grippedItem = null;
             gripping = false;
+            ctrlAnchored = false;
         }
     }
 
@@ -124,6 +116,13 @@ public class OVRController : MonoBehaviour
     public Vector3 GetPosition()
     {
         return controllerAnchor.position;
+    }
+
+    public Vector3 GetGrippedPosition()
+    {
+        return (grippedItem != null)
+            ? grippedItem.transform.position
+            : Vector3.positiveInfinity;
     }
 
 

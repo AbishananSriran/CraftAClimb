@@ -615,7 +615,7 @@ MonoBehaviour:
   cameraRig: {fileID: 1368512551}
   leftHand: {fileID: 1745987117}
   rightHand: {fileID: 1803912442}
-  climbForce: 1
+  climbForce: 5
   maxVelocity: 5
   smoothFactor: 0.2
   deadzone: 0.002
@@ -1090,6 +1090,9 @@ MonoBehaviour:
   touchedItem: {fileID: 0}
   grippedItem: {fileID: 0}
   grippedNormal: {x: 0, y: 0, z: 0}
+  gripPointWorld: {x: 0, y: 0, z: 0}
+  ctrlAnchored: 0
+  ctrlOffset: {x: 0, y: 0, z: 0}
   controllerAnchor: {fileID: 0}
 --- !u!135 &1745987118
 SphereCollider:
@@ -1162,6 +1165,9 @@ MonoBehaviour:
   touchedItem: {fileID: 0}
   grippedItem: {fileID: 0}
   grippedNormal: {x: 0, y: 0, z: 0}
+  gripPointWorld: {x: 0, y: 0, z: 0}
+  ctrlAnchored: 0
+  ctrlOffset: {x: 0, y: 0, z: 0}
   controllerAnchor: {fileID: 0}
 --- !u!135 &1803912443
 SphereCollider:

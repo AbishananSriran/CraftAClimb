@@ -4,7 +4,7 @@ public class ClimbingManager : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private Transform cameraRig;
-    
+
     [Header("Hands")]
     [SerializeField] private OVRController leftHand;
     [SerializeField] private OVRController rightHand;
@@ -28,23 +28,33 @@ public class ClimbingManager : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
+
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (leftHand.IsGripping())
+        // if (leftHand.IsGripping())
+        // {
+        //     StartClimbing(leftHand);
+        // }
+        // else if (rightHand.IsGripping())
+        // {
+        //     StartClimbing(rightHand);
+        // }
+        // else
+        // {
+        //     StopClimbing();
+        // }
+        if (!isClimbing)
         {
-            StartClimbing(leftHand);
-        }
-        else if (rightHand.IsGripping())
-        {
-            StartClimbing(rightHand);
+            if (leftHand.IsGripping()) StartClimbing(leftHand);
+            else if (rightHand.IsGripping()) StartClimbing(rightHand);
         }
         else
         {
-            StopClimbing();
+            if (!activateHand.IsGripping())
+                StopClimbing();
         }
     }
 
@@ -59,7 +69,7 @@ public class ClimbingManager : MonoBehaviour
     private void StartClimbing(OVRController hand)
     {
         if (isClimbing && activateHand == hand) return;
-        
+
         isClimbing = true;
         activateHand = hand;
 
@@ -70,48 +80,22 @@ public class ClimbingManager : MonoBehaviour
     private void StopClimbing()
     {
         if (!isClimbing) return;
-    
+
         isClimbing = false;
         activateHand = null;
     }
-
-    // private void ApplyClimbingMovement()
-    // {
-    //     if (activateHand == null) return;
-
-    //     Vector3 currentHandPos = activateHand.GetPosition();
-    //     Vector3 rawDelta = currentHandPos - lastHandPosition;
-    //     rawDelta = Vector3.ProjectOnPlane(rawDelta, -activateHand.grippedNormal);
-
-    //     // 1. Deadzone (kill micro jitter)
-    //     if (rawDelta.magnitude < deadzone)
-    //         rawDelta = Vector3.zero;
-
-    //     // 2. Clamp sudden spikes
-    //     rawDelta = Vector3.ClampMagnitude(rawDelta, maxDelta);
-
-    //     // 3. Smooth the movement
-    //     smoothedDelta = Vector3.Lerp(smoothedDelta, rawDelta, smoothFactor);
-
-    //     // 4. Apply movement
-    //     Vector3 move = -smoothedDelta * climbForce;
-    //     move = Vector3.ClampMagnitude(move, maxVelocity);
-
-    //     cameraRig.position += move;
-
-    //     lastHandPosition = currentHandPos;
-    // }
 
     private void ApplyClimbingMovement()
     {
         if (activateHand == null || activateHand.grippedItem == null) return;
 
         // Get the target hand position relative to the hold
-        Vector3 holdPos = activateHand.grippedItem.transform.position;
+        Vector3 holdPos = activateHand.GetGrippedPosition();
 
         // If this is the first frame of gripping, anchor the hand
         if (!activateHand.ctrlAnchored)
         {
+            Debug.Log("anchoring hand");
             activateHand.ctrlOffset = activateHand.GetPosition() - holdPos;
             activateHand.ctrlAnchored = true;
             smoothedDelta = Vector3.zero;
@@ -119,11 +103,8 @@ public class ClimbingManager : MonoBehaviour
             return; // wait one frame to initialize
         }
 
-        // Target hand position = hold + offset
-        Vector3 targetHandPos = holdPos + activateHand.ctrlOffset;
-
-        // Compute hand delta (how far the tracked hand tried to move)
-        Vector3 handDelta = targetHandPos - lastHandPosition;
+        Vector3 currentHandPos = activateHand.GetPosition();
+        Vector3 handDelta = currentHandPos - lastHandPosition;
 
         // Project onto wall plane so no forward/back movement
         handDelta = Vector3.ProjectOnPlane(handDelta, activateHand.grippedNormal);
@@ -148,7 +129,7 @@ public class ClimbingManager : MonoBehaviour
         cameraRig.position += move;
 
         // 7. Update last hand position
-        lastHandPosition = targetHandPos;
+        lastHandPosition = currentHandPos;
     }
 
 }
