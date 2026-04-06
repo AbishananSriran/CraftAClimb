@@ -40,8 +40,8 @@ TagManager:
   - Interactables
   - Controllers
   - Floor
-  - 
-  - 
+  - ClimbingFloor
+  - Climbable
   - 
   - 
   - 

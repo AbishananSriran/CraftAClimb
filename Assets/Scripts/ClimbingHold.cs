@@ -21,6 +21,7 @@ public class ClimbingHold : Interactable
         var rb = GetComponent<Rigidbody>();
         rb.isKinematic = true;
         rb.useGravity = false;
+        isClimbable = true;
     }
 
     void Start()
