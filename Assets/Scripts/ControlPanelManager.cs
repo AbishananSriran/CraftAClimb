@@ -1,3 +1,4 @@
+using System.Drawing;
 using UnityEngine;
 
 public class ControlPanelManager : MonoBehaviour
@@ -5,18 +6,26 @@ public class ControlPanelManager : MonoBehaviour
     [Header("Main Target")]
     public GameObject target;
 
-    public float maxSpinSpeed = 180f; // degrees per second
-    float currentSpinSpeed;
+    float minSize = 0.0075f;
+    float maxSize = 0.009f;
 
     // Dial -> particle hue
     public void OnDialHueChanged(float t)
     {
+        
     }
 
     // Slider -> particle emission rate (0..1)
     public void OnSliderParticleRateChanged(float t)
     {
+        float sz = minSize + (maxSize - minSize) * t;
+        Vector3 newScale = new Vector3(sz, sz, sz);
 
+        foreach (Transform child in target.transform)
+        {
+            child.localScale = newScale;
+            Debug.Log($"Set scale of {child.name} to {newScale}");
+        }
     }
 
     // Switch -> particles on/off
@@ -31,14 +40,14 @@ public class ControlPanelManager : MonoBehaviour
 
     }
 
+    // Hinge Slider -> onValueChanged(float 0..1) 
+    public void OnRotationSpeedChanged(float t)
+    {
+        
+    }
+
     void Update()
     {
 
     }
-
-    // Hinge Slider -> onValueChanged(float 0..1) 
-    public void OnRotationSpeedChanged(float t)
-    {
-    }
-
 }

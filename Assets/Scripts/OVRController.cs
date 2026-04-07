@@ -11,121 +11,87 @@ public class OVRController : MonoBehaviour
     // 
     public Interactable touchedItem;
     public Interactable grippedItem;
-    public Vector3 grippedNormal;
-    public bool ctrlAnchored = false;
-    public Vector3 ctrlOffset;
-
     OVRInput.Controller Ctrl =>
         (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
 
-    public Transform controllerAnchor;
-    bool gripping;
-
-
-    void Awake()
-    {
-        Debug.Log("this is the " + hand + " hand");
-        Debug.Log("the grip button is " + gripButton);
-
-        controllerAnchor = transform.parent.gameObject.transform;
-    }
+    static bool gripping;
 
     void Update()
     {
-        // // Release gripped item on grip release
-
-        float grip = GetGripValue();
-
-        if (grippedItem != null && grip < 0.1f && gripping)
+        // Release gripped item on grip release
+        var ctrl = (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
+                
+        if (grippedItem != null && OVRInput.GetUp(gripButton, ctrl))
         {
             Debug.Log("Release grip");
             grippedItem.OnGripEnd(this);
             grippedItem = null;
             gripping = false;
-            ctrlAnchored = false;
         }
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.attachedRigidbody == null) return;
         //Debug.Log("Collided with Dial");
-        var interactable = other.attachedRigidbody.GetComponent<Interactable>();
-        grippedNormal = interactable.GetComponentInParent<Transform>().transform.forward;
+        var interactable = other.attachedRigidbody != null 
+            ? other.attachedRigidbody.GetComponent<Interactable>() : null;
 
         if (interactable == null || !interactable.enabled) return;
-
+       
+        //Debug.Log("Call Dial on Touch Enter");
+        interactable.OnTouchEnter(this);
     }
 
     // Gripping setup is placed here as user might touch component then press grip trigger
     private void OnTriggerStay(Collider other)
     {
-        if (other.attachedRigidbody == null) return;
-        var interactable = other.attachedRigidbody.GetComponent<Interactable>();
-        grippedNormal = interactable.GetComponentInParent<Transform>().transform.forward;
 
+        //Debug.Log("Collided with Dial");
+        var interactable = other.attachedRigidbody != null 
+            ? other.attachedRigidbody.GetComponent<Interactable>() : null;
+
+        if (interactable == null)
+        {
+            interactable = other.GetComponentInParent<Interactable>();        
+        }
 
         if (interactable == null || !interactable.enabled) return;
-
+       
         // Already gripping it
         if (grippedItem == interactable) return;
 
-        // OVRInput.Controller ctrl = (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
-        float grip = GetGripValue();
-        bool IsGrippingNow = grip > 0.5f;
+        float gripValue = (hand == Hand.Left)
+            ? OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger)
+            : OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
 
+        bool grip = gripValue > 0.5f;
+      
         // If grip trigger held and we haven't already set up grip  
-        if (IsGrippingNow && !gripping)
+        if (grip && !gripping)
         {
             gripping = true;
             grippedItem = interactable;
             grippedItem.OnGripBegin(this);
-
-            ctrlOffset = GetPosition() - grippedItem.transform.position;
-            ctrlAnchored = true;
         }
-
+        
+        interactable.OnTouchStay(this);
+        
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.attachedRigidbody == null) return;
-        var interactable = other.attachedRigidbody.GetComponent<Interactable>();
+        var interactable = other.attachedRigidbody != null 
+            ? other.attachedRigidbody.GetComponent<Interactable>() : null;  
+            
         if (interactable == null || !interactable.enabled) return;
-
+        
         if (gripping && grippedItem != null)
         {
             grippedItem.OnGripEnd(this);
-            grippedItem = null;
             gripping = false;
-            ctrlAnchored = false;
         }
+        interactable.OnTouchExit(this);
     }
-
-    float GetGripValue()
-    {
-        return (hand == Hand.Left)
-            ? OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger)
-            : OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
-    }
-
-    public bool IsGripping()
-    {
-        return gripping;
-    }
-
-    public Vector3 GetPosition()
-    {
-        return controllerAnchor.position;
-    }
-
-    public Vector3 GetGrippedPosition()
-    {
-        return (grippedItem != null)
-            ? grippedItem.transform.position
-            : Vector3.positiveInfinity;
-    }
-
 
     // Simple haptics helpers
     public void HapticTick(float amplitude = 0.18f, float duration = 0.015f) => HapticPulse(amplitude, duration);
