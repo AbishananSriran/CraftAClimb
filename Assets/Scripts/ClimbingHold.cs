@@ -7,13 +7,20 @@ public class ClimbingHold : Interactable
 {
     public enum LocalAxis { X, Y, Z }
 
+    [Header("Hold Options")]
+    public float maxGripTime = 5f;
+
     [Header("Haptics (optional)")]
     public bool haptics = true;
 
     public bool IsGrabbed { get; private set; }
-
+    
     // --- internal state ---
     OVRController controller;
+    private float currentGripTime;
+    float regrabCooldown = 0.5f;
+    float lastReleaseTime = 0f;
+
 
     void Awake()
     {
@@ -24,16 +31,17 @@ public class ClimbingHold : Interactable
         isClimbable = true;
     }
 
-    void Start()
-    {
-
-    }
-
     public override void OnGripBegin(OVRController ctrl)
     {
+        if (Time.time - lastReleaseTime <= regrabCooldown) return;
+
+        Debug.Log("grabbing");
+
         controller = ctrl;
 
         IsGrabbed = true;
+        
+        currentGripTime = maxGripTime;
 
         if (haptics) controller.HapticClick(0.15f, 0.02f); // small grab tick
     }
@@ -42,14 +50,38 @@ public class ClimbingHold : Interactable
     {
         if (controller != ctrl) return;
         controller = null;
+        lastReleaseTime = Time.time;
         IsGrabbed = false;
     }
 
     void Update()
     {
-        if (controller == null) return;
+        if (controller == null || !IsGrabbed) return;
 
+        currentGripTime -= Time.deltaTime;
 
+        if (currentGripTime <= 0f)
+        {
+            ForceRelease();
+        }
+
+    }
+
+    void ForceRelease()
+    {
+        Debug.Log("'force release'");
+        if (controller != null)
+        {
+            Debug.Log("inside if 'force release'");
+
+            controller.HapticClick();
+            controller.ForceRelease();
+
+            controller.BlockRegrab(1f);
+        }
+
+        IsGrabbed = false;
+        controller = null;
     }
 
     // ---------------- Helper Methods ----------------

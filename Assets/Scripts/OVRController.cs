@@ -20,6 +20,7 @@ public class OVRController : MonoBehaviour
 
     public Transform controllerAnchor;
     bool gripping;
+    float regrabBlockedUntil = 0f;
 
 
     void Awake()
@@ -62,6 +63,7 @@ public class OVRController : MonoBehaviour
     {
         if (other.attachedRigidbody == null) return;
         var interactable = other.attachedRigidbody.GetComponent<Interactable>();
+        
         grippedNormal = interactable.GetComponentInParent<Transform>().transform.forward;
 
 
@@ -70,12 +72,11 @@ public class OVRController : MonoBehaviour
         // Already gripping it
         if (grippedItem == interactable) return;
 
-        // OVRInput.Controller ctrl = (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
         float grip = GetGripValue();
         bool IsGrippingNow = grip > 0.5f;
 
         // If grip trigger held and we haven't already set up grip  
-        if (IsGrippingNow && !gripping)
+        if (IsGrippingNow && !gripping && Time.time > regrabBlockedUntil)
         {
             gripping = true;
             grippedItem = interactable;
@@ -124,6 +125,24 @@ public class OVRController : MonoBehaviour
         return (grippedItem != null)
             ? grippedItem.transform.position
             : Vector3.positiveInfinity;
+    }
+
+    public void ForceRelease()
+    {
+        if (grippedItem != null)
+        {
+            grippedItem.OnGripEnd(this);
+            grippedItem = null;
+        }
+
+        gripping = false;
+        ctrlAnchored = false;
+    }
+
+    public void BlockRegrab(float duration = 0.25f)
+    {
+        regrabBlockedUntil = Time.time + duration;
+        Debug.Log("regrab blocked until: " + regrabBlockedUntil);
     }
 
 
