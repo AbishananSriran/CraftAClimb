@@ -27,42 +27,26 @@ public class OVRController : MonoBehaviour
     // 
     public Interactable touchedItem;
     public Interactable grippedItem;
-    public Vector3 grippedNormal;
-    public bool ctrlAnchored = false;
-    public Vector3 ctrlOffset;
-
     OVRInput.Controller Ctrl =>
         (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
 
     public Transform controllerAnchor;
     bool gripping;
-    bool requireGripReset = false;
-    bool inChalkBag = false;
 
 
     void Awake()
     {
+        Debug.Log("this is the " + hand + " hand");
+        Debug.Log("the grip button is " + gripButton);
+
         controllerAnchor = transform.parent.gameObject.transform;
-        currentStamina = maxStamina;
     }
 
     void Update()
     {
-        if (inChalkBag)
-        {
-            UseChalk();
-            Debug.Log("using chalkf");
-        }
-
         // // Release gripped item on grip release
 
         float grip = GetGripValue();
-
-        if (requireGripReset && grip < 0.1f)
-        {
-            requireGripReset = false;
-            Debug.Log("grip reset");
-        }
 
         if (grippedItem != null && grip < 0.1f && gripping)
         {
@@ -70,7 +54,6 @@ public class OVRController : MonoBehaviour
             grippedItem.OnGripEnd(this);
             grippedItem = null;
             gripping = false;
-            ctrlAnchored = false;
         }
 
         if (gripping && grippedItem != null && grippedItem.isClimbable)
@@ -100,24 +83,20 @@ public class OVRController : MonoBehaviour
                 exhausted = false;
             }
         }
-        
+
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("ChalkBag"))
-        {
-            inChalkBag = true;
-            Debug.Log("entered chalk bag");
-        }
-
         if (other.attachedRigidbody == null) return;
-
+        //Debug.Log("Collided with Dial");
         var interactable = other.attachedRigidbody.GetComponent<Interactable>();
         grippedNormal = interactable.GetComponentInParent<Transform>().transform.forward;
 
         if (interactable == null || !interactable.enabled) return;
 
+        //Debug.Log("Call Dial on Touch Enter");
+        interactable.OnTouchEnter(this);
     }
 
     // Gripping setup is placed here as user might touch component then press grip trigger
@@ -125,7 +104,6 @@ public class OVRController : MonoBehaviour
     {
         if (other.attachedRigidbody == null) return;
         var interactable = other.attachedRigidbody.GetComponent<Interactable>();
-
         grippedNormal = interactable.GetComponentInParent<Transform>().transform.forward;
 
 
@@ -134,29 +112,24 @@ public class OVRController : MonoBehaviour
         // Already gripping it
         if (grippedItem == interactable) return;
 
+        // OVRInput.Controller ctrl = (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
         float grip = GetGripValue();
         bool IsGrippingNow = grip > 0.5f;
 
         // If grip trigger held and we haven't already set up grip  
-        if (IsGrippingNow && !gripping && !requireGripReset && !exhausted)
+        if (IsGrippingNow && !gripping)
         {
             gripping = true;
             grippedItem = interactable;
             grippedItem.OnGripBegin(this);
-
-            ctrlOffset = GetPosition() - grippedItem.transform.position;
-            ctrlAnchored = true;
         }
+
+        interactable.OnTouchStay(this);
 
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.CompareTag("ChalkBag"))
-        {
-            inChalkBag = false;
-        }
-
         if (other.attachedRigidbody == null) return;
         var interactable = other.attachedRigidbody.GetComponent<Interactable>();
         if (interactable == null || !interactable.enabled) return;
@@ -164,112 +137,11 @@ public class OVRController : MonoBehaviour
         if (gripping && grippedItem != null)
         {
             grippedItem.OnGripEnd(this);
-            grippedItem = null;
             gripping = false;
-            ctrlAnchored = false;
         }
+        interactable.OnTouchExit(this);
     }
 
-    float GetGripValue()
-    {
-        return (hand == Hand.Left)
-            ? OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger)
-            : OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
-    }
-
-    public bool IsGripping()
-    {
-        return gripping;
-    }
-
-    public Vector3 GetPosition()
-    {
-        return controllerAnchor.position;
-    }
-
-    public Vector3 GetGrippedPosition()
-    {
-        return (grippedItem != null)
-            ? grippedItem.transform.position
-            : Vector3.positiveInfinity;
-    }
-
-    public void ForceRelease()
-    {
-        Debug.Log("ovr force release");
-        if (grippedItem != null)
-        {
-            grippedItem.OnGripEnd(this);
-            grippedItem = null;
-        }
-
-        gripping = false;
-        ctrlAnchored = false;
-
-        requireGripReset = true;
-
-        HapticClick();
-    }
-
-    void UseChalk()
-    {
-        if (chalkParticles != null)
-        {
-            chalkParticles.Play();
-        }
-    }
-
-
-    void FatigueHaptics()
-    {
-        float staminaPercent = Mathf.Clamp01(currentStamina / maxStamina);
-        float intensity = 1f - staminaPercent;
-        
-        
-        bool isHeartbeatPhase = staminaPercent <= 0.5f;
-        bool isPanicMode = staminaPercent < panicModeThreshold;
-
-        // slow rumble while not very tired
-        if (!isHeartbeatPhase)
-        {
-            float ramp = Mathf.InverseLerp(1f, 0.5f, staminaPercent);
-            ramp *= ramp;
-
-            float rumbleStrength = ramp * fatigueVibrationFactor * 0.4f;
-
-            HapticPulse(rumbleStrength, Time.deltaTime);
-            return;
-        }
-        
-        float heartbeatIntensity = Mathf.InverseLerp(0.5f, 0f, staminaPercent);
-        float interval = Mathf.Lerp(maxBeatInterval, minBeatInterval, intensity);
-        
-        // panic mode activates
-        if (isPanicMode)
-        {
-            interval *= Random.Range(0.7f, 1.3f); // jitter timing
-            fatigueVibrationFactor *= 1.2f;
-        }
-
-        // Timer
-        heartbeatTimer += Time.deltaTime;
-
-        if (heartbeatTimer >= interval)
-        {
-            heartbeatTimer = 0f;
-
-            float pulseStrength = heartbeatIntensity * heartbeatIntensity * fatigueVibrationFactor;
-
-            StartCoroutine(HeartbeatPulse(pulseStrength));
-        }
-    }
-
-    IEnumerator HeartbeatPulse(float strength)
-    {
-        HapticPulse(strength, 0.08f); // first strong beat
-        yield return new WaitForSeconds(0.12f);
-        HapticPulse(strength * 0.6f, 0.06f); // second softer beat
-    }
 
     // Simple haptics helpers
     public void HapticTick(float amplitude = 0.18f, float duration = 0.015f) => HapticPulse(amplitude, duration);

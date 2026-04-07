@@ -80,20 +80,21 @@ public class Lever : Interactable
 
     public override void OnGripBegin(OVRController ctrl)
     {
+
+        Debug.Log("Grip working");
         controller = ctrl;
         isGripping = true;
 
-        // TODO - Build a stable reference frame around the hinge axis (world)
-        // Hint: see ToggleSwitch.cs 
-        /*
-        Reference:
-        switchAngleAtTouch = currentAngle;
-        cntlrAngleAtTouch = ComputeControllerAngleLocal(ctrl.transform.position);
-        */
+        // --- Robust hinge plane setup ---
         axisWorld = GetAxisWorld();
-        uWorld = Vector3.Cross(axisWorld, Vector3.up);
-        vWorld = Vector3.Cross(axisWorld, uWorld);
 
+        // Pick a fallback vector if axisWorld is parallel to up
+        Vector3 arbitrary = Vector3.up;
+        if (Vector3.Dot(axisWorld, arbitrary) > 0.99f) // almost parallel
+            arbitrary = Vector3.forward;
+
+        uWorld = Vector3.Cross(axisWorld, arbitrary).normalized;
+        vWorld = Vector3.Cross(axisWorld, uWorld);
 
         // Capture grab angles to prevent snapping
         angleAtGrab = currentAngle;
@@ -102,7 +103,6 @@ public class Lever : Interactable
         if (haptics) ctrl.HapticClick(0.2f, 0.02f);
         lastHapticTime = Time.time;
     }
-
     public override void OnGripEnd(OVRController ctrl)
     {
         if (ctrl == controller)
