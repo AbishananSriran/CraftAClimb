@@ -27,10 +27,6 @@ public class OVRController : MonoBehaviour
     // 
     public Interactable touchedItem;
     public Interactable grippedItem;
-    public Vector3 grippedNormal;
-    public bool ctrlAnchored = false;
-    public Vector3 ctrlOffset;
-
     OVRInput.Controller Ctrl =>
         (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
 
@@ -70,7 +66,6 @@ public class OVRController : MonoBehaviour
             grippedItem.OnGripEnd(this);
             grippedItem = null;
             gripping = false;
-            ctrlAnchored = false;
         }
 
         if (gripping && grippedItem != null && grippedItem.isClimbable)
@@ -100,7 +95,7 @@ public class OVRController : MonoBehaviour
                 exhausted = false;
             }
         }
-        
+
     }
 
     private void OnTriggerEnter(Collider other)
@@ -118,6 +113,8 @@ public class OVRController : MonoBehaviour
 
         if (interactable == null || !interactable.enabled) return;
 
+        //Debug.Log("Call Dial on Touch Enter");
+        interactable.OnTouchEnter(this);
     }
 
     // Gripping setup is placed here as user might touch component then press grip trigger
@@ -128,6 +125,14 @@ public class OVRController : MonoBehaviour
 
         grippedNormal = interactable.GetComponentInParent<Transform>().transform.forward;
 
+        //Debug.Log("Collided with Dial");
+        var interactable = other.attachedRigidbody != null
+            ? other.attachedRigidbody.GetComponent<Interactable>() : null;
+
+        if (interactable == null)
+        {
+            interactable = other.GetComponentInParent<Interactable>();
+        }
 
         if (interactable == null || !interactable.enabled) return;
 
@@ -137,16 +142,17 @@ public class OVRController : MonoBehaviour
         float grip = GetGripValue();
         bool IsGrippingNow = grip > 0.5f;
 
+        bool grip = gripValue > 0.5f;
+
         // If grip trigger held and we haven't already set up grip  
         if (IsGrippingNow && !gripping && !requireGripReset && !exhausted)
         {
             gripping = true;
             grippedItem = interactable;
             grippedItem.OnGripBegin(this);
-
-            ctrlOffset = GetPosition() - grippedItem.transform.position;
-            ctrlAnchored = true;
         }
+
+        interactable.OnTouchStay(this);
 
     }
 
@@ -164,10 +170,9 @@ public class OVRController : MonoBehaviour
         if (gripping && grippedItem != null)
         {
             grippedItem.OnGripEnd(this);
-            grippedItem = null;
             gripping = false;
-            ctrlAnchored = false;
         }
+        interactable.OnTouchExit(this);
     }
 
     float GetGripValue()
@@ -224,8 +229,8 @@ public class OVRController : MonoBehaviour
     {
         float staminaPercent = Mathf.Clamp01(currentStamina / maxStamina);
         float intensity = 1f - staminaPercent;
-        
-        
+
+
         bool isHeartbeatPhase = staminaPercent <= 0.5f;
         bool isPanicMode = staminaPercent < panicModeThreshold;
 
@@ -240,10 +245,10 @@ public class OVRController : MonoBehaviour
             HapticPulse(rumbleStrength, Time.deltaTime);
             return;
         }
-        
+
         float heartbeatIntensity = Mathf.InverseLerp(0.5f, 0f, staminaPercent);
         float interval = Mathf.Lerp(maxBeatInterval, minBeatInterval, intensity);
-        
+
         // panic mode activates
         if (isPanicMode)
         {
