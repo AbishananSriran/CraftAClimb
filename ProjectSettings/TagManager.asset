@@ -30,6 +30,7 @@ TagManager:
   - SamplesInfoPanel
   - QDSUIToggleCheckboxRadio
   - RockSet_01
+  - ChalkBag
   layers:
   - Default
   - TransparentFX
@@ -42,7 +43,7 @@ TagManager:
   - Floor
   - ClimbingFloor
   - Climbable
-  - 
+  - ChalkBag
   - 
   - 
   - 

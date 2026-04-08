@@ -5,6 +5,7 @@
         [Header("References")]
         [SerializeField] private Transform cameraRig;
 
+
         [Header("Hands")]
         [SerializeField] private OVRController leftHand;
         [SerializeField] private OVRController rightHand;
@@ -18,21 +19,21 @@
         [SerializeField] float maxDelta = 0.1f;
         Vector3 smoothedDelta;
 
+        [Header("Fake Gravity")]
+        [SerializeField] private float gravity = -9.8f;
+        [SerializeField] private float maxFallSpeed = -20f;
+        [SerializeField] private float groundY = 0f;
+
+        private float verticalVelocity = 0f;
+
         private bool isClimbing = false;
         private OVRController activateHand = null;
 
         private Vector3 lastHandPosition;
-        private Vector3 velocity;
-        private Vector3 climbNormal;
 
-        // Start is called once before the first execution of Update after the MonoBehaviour is created
-        void Start()
-        {
 
-        }
-
-        // Update is called once per frame
-        void Update()
+    // Update is called once per frame
+    void Update()
         {
             if (!isClimbing)
             {
@@ -50,7 +51,12 @@
         {
             if (isClimbing)
             {
+                verticalVelocity = 0f;
                 ApplyClimbingMovement();
+            }
+            else
+            {
+                ApplyGravity();
             }
         }
 
@@ -120,6 +126,30 @@
 
             // 7. Update last hand position
             lastHandPosition = currentHandPos;
+        }
+
+        private void ApplyGravity()
+        {
+            if (cameraRig.position.y <= groundY)
+            {
+                verticalVelocity = 0f;
+                Vector3 pos = cameraRig.position;
+                pos.y = groundY;
+                cameraRig.position = pos;
+                return;
+            }
+
+            // Apply gravity acceleration
+            verticalVelocity += gravity * Time.fixedDeltaTime;
+
+            // Clamp fall speed
+            if (verticalVelocity < maxFallSpeed)
+                verticalVelocity = maxFallSpeed;
+
+            // Apply movement downward
+            Vector3 gravityMove = new Vector3(0f, verticalVelocity, 0f) * Time.fixedDeltaTime;
+
+            cameraRig.position += gravityMove;
         }
 
     }

@@ -5,8 +5,17 @@ public class OVRController : MonoBehaviour
     public enum Hand { Left, Right }
     public Hand hand = Hand.Right;
 
+    [SerializeField] private ParticleSystem chalkParticles;
+
     [Header("Input")]
     public OVRInput.Button gripButton = OVRInput.Button.PrimaryHandTrigger;
+
+    [Header("Stamina")]
+    public float maxStamina = 5f;
+    public float staminaDrainRate = 1f;
+    public float staminaRegenRate = 1.5f;
+    public float currentStamina;
+    bool exhausted = false;
 
     // 
     public Interactable touchedItem;
@@ -21,18 +30,23 @@ public class OVRController : MonoBehaviour
     public Transform controllerAnchor;
     bool gripping;
     bool requireGripReset = false;
+    bool inChalkBag = false;
 
 
     void Awake()
     {
-        Debug.Log("this is the " + hand + " hand");
-        Debug.Log("the grip button is " + gripButton);
-
         controllerAnchor = transform.parent.gameObject.transform;
+        currentStamina = maxStamina;
     }
 
     void Update()
     {
+        if (inChalkBag)
+        {
+            UseChalk();
+            Debug.Log("using chalkf");
+        }
+
         // // Release gripped item on grip release
 
         float grip = GetGripValue();
@@ -51,12 +65,42 @@ public class OVRController : MonoBehaviour
             gripping = false;
             ctrlAnchored = false;
         }
+
+        if (gripping && grippedItem != null && grippedItem.isClimbable)
+        {
+            currentStamina -= staminaDrainRate * Time.deltaTime;
+
+            if (currentStamina <= 0f && !exhausted)
+            {
+                exhausted = true;
+                currentStamina = 0f;
+
+                ForceRelease();
+            }
+        }
+        else
+        {
+            currentStamina += staminaRegenRate * Time.deltaTime;
+            currentStamina = Mathf.Min(currentStamina, maxStamina);
+
+            if (currentStamina > 0.2f * maxStamina)
+            {
+                exhausted = false;
+            }
+        }
+        
     }
 
     private void OnTriggerEnter(Collider other)
     {
+        if (other.CompareTag("ChalkBag"))
+        {
+            inChalkBag = true;
+            Debug.Log("entered chalk bag");
+        }
+
         if (other.attachedRigidbody == null) return;
-        //Debug.Log("Collided with Dial");
+
         var interactable = other.attachedRigidbody.GetComponent<Interactable>();
         grippedNormal = interactable.GetComponentInParent<Transform>().transform.forward;
 
@@ -82,7 +126,7 @@ public class OVRController : MonoBehaviour
         bool IsGrippingNow = grip > 0.5f;
 
         // If grip trigger held and we haven't already set up grip  
-        if (IsGrippingNow && !gripping && !requireGripReset)
+        if (IsGrippingNow && !gripping && !requireGripReset && !exhausted)
         {
             gripping = true;
             grippedItem = interactable;
@@ -96,6 +140,11 @@ public class OVRController : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
+        if (other.CompareTag("ChalkBag"))
+        {
+            inChalkBag = false;
+        }
+
         if (other.attachedRigidbody == null) return;
         var interactable = other.attachedRigidbody.GetComponent<Interactable>();
         if (interactable == null || !interactable.enabled) return;
@@ -146,6 +195,14 @@ public class OVRController : MonoBehaviour
         ctrlAnchored = false;
 
         requireGripReset = true;
+    }
+
+    void UseChalk()
+    {
+        if (chalkParticles != null)
+        {
+            chalkParticles.Play();
+        }
     }
 
     // Simple haptics helpers
