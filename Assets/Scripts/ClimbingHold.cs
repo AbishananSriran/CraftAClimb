@@ -7,6 +7,10 @@ public class ClimbingHold : Interactable
 {
     public enum LocalAxis { X, Y, Z }
 
+    [Header("Grip Fatigue")]
+    public float maxGripTime = 5f;
+    float currentGripTime;
+
     [Header("Haptics (optional)")]
     public bool haptics = true;
 
@@ -35,6 +39,8 @@ public class ClimbingHold : Interactable
 
         IsGrabbed = true;
 
+        currentGripTime = maxGripTime;
+
         if (haptics) controller.HapticClick(0.15f, 0.02f); // small grab tick
     }
 
@@ -49,7 +55,25 @@ public class ClimbingHold : Interactable
     {
         if (controller == null) return;
 
+        currentGripTime -= Time.deltaTime;
 
+        if (currentGripTime <= 0f)
+        {
+            ForceRelease();
+        }
+
+
+    }
+
+    void ForceRelease()
+    {
+        if (controller != null)
+        {
+            controller.ForceRelease();
+            controller = null;
+        }
+
+        IsGrabbed = false;
     }
 
     // ---------------- Helper Methods ----------------

@@ -20,6 +20,7 @@ public class OVRController : MonoBehaviour
 
     public Transform controllerAnchor;
     bool gripping;
+    bool requireGripReset = false;
 
 
     void Awake()
@@ -35,6 +36,12 @@ public class OVRController : MonoBehaviour
         // // Release gripped item on grip release
 
         float grip = GetGripValue();
+
+        if (requireGripReset && grip < 0.1f)
+        {
+            requireGripReset = false;
+            Debug.Log("grip reset");
+        }
 
         if (grippedItem != null && grip < 0.1f && gripping)
         {
@@ -75,7 +82,7 @@ public class OVRController : MonoBehaviour
         bool IsGrippingNow = grip > 0.5f;
 
         // If grip trigger held and we haven't already set up grip  
-        if (IsGrippingNow && !gripping)
+        if (IsGrippingNow && !gripping && !requireGripReset)
         {
             gripping = true;
             grippedItem = interactable;
@@ -126,6 +133,20 @@ public class OVRController : MonoBehaviour
             : Vector3.positiveInfinity;
     }
 
+    public void ForceRelease()
+    {
+        Debug.Log("ovr force release");
+        if (grippedItem != null)
+        {
+            grippedItem.OnGripEnd(this);
+            grippedItem = null;
+        }
+
+        gripping = false;
+        ctrlAnchored = false;
+
+        requireGripReset = true;
+    }
 
     // Simple haptics helpers
     public void HapticTick(float amplitude = 0.18f, float duration = 0.015f) => HapticPulse(amplitude, duration);
