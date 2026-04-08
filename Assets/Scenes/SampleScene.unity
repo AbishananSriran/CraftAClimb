@@ -18031,6 +18031,7 @@ MonoBehaviour:
   moveSpeed: 15
   triggerThreshold: 0.8
   ready: 0
+  parent: {fileID: 929902033}
   laserPointer: {fileID: 0}
   inactiveColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   hoverColor: {r: 0, g: 1, b: 0, a: 1}
@@ -22349,6 +22350,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 6476454882798353096, guid: 914f408614d131f44ac9140aa75d82ea, type: 3}
+      propertyPath: parentToClear
+      value: 
+      objectReference: {fileID: 929902033}
     - target: {fileID: 8074669035540138411, guid: 914f408614d131f44ac9140aa75d82ea, type: 3}
       propertyPath: m_Name
       value: Trash_Bin Variant
@@ -22510,6 +22515,37 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 3.0000002, y: 3.000001, z: 0}
   m_Center: {x: 0, y: -0.0000019073486, z: 0}
+--- !u!1 &929902033
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 929902034}
+  m_Layer: 0
+  m_Name: Boulders
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &929902034
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 929902033}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &934906186
 GameObject:
   m_ObjectHideFlags: 0
@@ -52085,3 +52121,4 @@ SceneRoots:
   - {fileID: 298282569}
   - {fileID: 758134060}
   - {fileID: 246439646}
+  - {fileID: 929902034}

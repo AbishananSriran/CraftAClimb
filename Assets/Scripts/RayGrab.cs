@@ -6,10 +6,13 @@ public class RayGrab : MonoBehaviour
     public Transform controllerTransform;
     public LayerMask grabbableLayer;    // Only objects that can be grabbed
     public LayerMask surfaceLayer;      // Only layers that represent surfaces to place objects on  
-    public float fallbackDistance = 10f;
+    public float fallbackDistance = 3f;
     public float moveSpeed = 15f;
     public float triggerThreshold = 0.8f;
     public bool ready = false;
+
+    [Header("Boulders Parent")]
+    public GameObject parent;
 
     [Header("Laser Pointer")]
     public LineRenderer laserPointer;   // Assign a LineRenderer prefab for the laser
@@ -60,7 +63,24 @@ public class RayGrab : MonoBehaviour
             // If not holding anything and we have a valid hit, grab it
             if (grabbedObject == null && hasValidHit)
             {
-                grabbedObject = lastGrabbableHit.collider.transform;
+                Transform original = lastGrabbableHit.collider.transform;
+
+                // Prevent cloning already spawned objects
+                if (original.parent == parent.transform) return;
+
+                // Create a copy
+                GameObject clone = Instantiate(original.gameObject);
+
+                // Parent it
+                clone.transform.SetParent(parent.transform);
+
+                // Optional: match position & rotation exactly
+                clone.transform.position = original.position;
+                clone.transform.rotation = original.rotation;
+
+                // Assign as grabbed
+                grabbedObject = clone.transform;
+
                 grabOffset = Vector3.zero;
             }
 
