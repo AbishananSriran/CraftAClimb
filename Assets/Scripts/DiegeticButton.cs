@@ -25,6 +25,15 @@ public class DiegeticButton : Interactable
     [Tooltip("Allowed minimum time between presses.")]
     public float cooldown = 0.15f;
 
+    [Tooltip("RayGrab component to optionally disable while button is pressed.")]
+    public RayGrab rayGrabToDisable;
+
+    [Tooltip("Start Position of the game")]
+    public GameObject startPosition;
+
+    [Tooltip("OVRCameraRig")]
+    public GameObject ovrCameraRig;
+
     [Header("Haptics")]
     public bool haptics = true;
     public float armedTickAmplitude = 0.15f;
@@ -95,6 +104,9 @@ public class DiegeticButton : Interactable
             if (!armed && Time.time >= nextAllowedTime && pressDepth >= maxPressDepth * pressThreshold)
             {
                 armed = true;
+                rayGrabToDisable.ready = false;
+                ovrCameraRig.transform.position = startPosition.transform.position;
+
                 if (haptics)
                 {
                     touchingCtrl.HapticTick(armedTickAmplitude, armedTickDuration);
