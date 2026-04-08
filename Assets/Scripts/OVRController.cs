@@ -69,6 +69,7 @@ public class OVRController : MonoBehaviour
     {
         if (other.attachedRigidbody == null) return;
         var interactable = other.attachedRigidbody.GetComponent<Interactable>();
+
         grippedNormal = interactable.GetComponentInParent<Transform>().transform.forward;
 
 
@@ -77,7 +78,6 @@ public class OVRController : MonoBehaviour
         // Already gripping it
         if (grippedItem == interactable) return;
 
-        // OVRInput.Controller ctrl = (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
         float grip = GetGripValue();
         bool IsGrippingNow = grip > 0.5f;
 
