@@ -5,6 +5,10 @@ public class TrashBin : MonoBehaviour
     [Header("Target Parent To Clear")]
     public GameObject parentToClear;
 
+    [Header("Star Object To Spawn")]
+    public GameObject star;
+
+
     // Make sure your bin collider has 'Is Trigger' checked
     private void OnTriggerEnter(Collider other)
     {
@@ -19,5 +23,7 @@ public class TrashBin : MonoBehaviour
         {
             Destroy(child.gameObject);
         }
+
+        star.SetActive(true);
     }
 }
