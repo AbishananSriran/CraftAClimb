@@ -3,6 +3,7 @@ using UnityEngine;
 public class GameManager : MonoBehaviour
 {
     public bool started = false;
+    public GameObject uiCanvas;
     public GameObject ovrCameraRig;
     public GameObject boulders;
     public SimpleGemsAnim star;
@@ -11,15 +12,26 @@ public class GameManager : MonoBehaviour
     public float health = 100f;
     public Vector3 origPosition = new Vector3(0, 0.5f, 0);
 
+
+    public void StartGame()
+    {
+        started = true;
+
+        if (uiCanvas != null)
+            uiCanvas.SetActive(false);
+    }
+
     // Update is called once per frame
     private void OnEnable()
     {
-        star.OnTouched += HandleTouched;
+        if (star != null)
+            star.OnTouched += HandleTouched;
     }
 
     private void OnDisable()
     {
-        star.OnTouched -= HandleTouched; // always unsubscribe
+        if (star != null)
+            star.OnTouched -= HandleTouched; // always unsubscribe
     }
 
     private void HandleTouched()
@@ -41,10 +53,14 @@ public class GameManager : MonoBehaviour
             Destroy(child.gameObject);
         }
 
-        Destroy(star.gameObject);
-        star = null;
+        if (star != null)
+        {
+            Destroy(star.gameObject);
+            star = null;
+        }
 
         started = false;
         originalStar.SetActive(true);
+        uiCanvas.SetActive(true);
     }
 }

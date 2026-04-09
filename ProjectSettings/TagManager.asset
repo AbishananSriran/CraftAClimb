@@ -31,12 +31,12 @@ TagManager:
     - SamplesInfoPanel
     - QDSUIToggleCheckboxRadio
     - RockSet_01
-    - ChalkBag
+    - UIButton
   layers:
     - Default
     - TransparentFX
     - Ignore Raycast
-    -
+    - Overlay UI
     - Water
     - UI
     - Interactables
@@ -44,7 +44,6 @@ TagManager:
     - Floor
     - ClimbingFloor
     - Climbable
-    - ChalkBag
     - Wall
     -
     -

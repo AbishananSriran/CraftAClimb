@@ -4,8 +4,8 @@ public class RayGrab : MonoBehaviour
 {
     [Header("Controller & Ray Settings")]
     public Transform controllerTransform;
-    public LayerMask grabbableLayer;    // Only objects that can be grabbed
-    public LayerMask surfaceLayer;      // Only layers that represent surfaces to place objects on  
+    public LayerMask grabbableLayer;
+    public LayerMask surfaceLayer;
     public float fallbackDistance = 3f;
     public float moveSpeed = 15f;
     public float triggerThreshold = 0.8f;
@@ -15,14 +15,18 @@ public class RayGrab : MonoBehaviour
     public GameObject parent;
 
     [Header("Laser Pointer")]
-    public LineRenderer laserPointer;   // Assign a LineRenderer prefab for the laser
+    public LineRenderer laserPointer;
     public Color inactiveColor = Color.gray;
     public Color hoverColor = Color.green;
+    public Color uiHoverColor = Color.cyan;
 
     private Transform grabbedObject = null;
     private Vector3 grabOffset;
     private RaycastHit lastGrabbableHit;
     private bool hasValidHit = false;
+
+    private float lastClickTime = 0f;
+    public float clickCooldown = 0.25f;
 
     void Start()
     {
@@ -33,9 +37,6 @@ public class RayGrab : MonoBehaviour
         laserPointer.startWidth = laserPointer.endWidth = 0.005f;
         laserPointer.positionCount = 2;
 
-        laserPointer.SetPosition(0, controllerTransform.position);
-        laserPointer.SetPosition(1, controllerTransform.position + controllerTransform.forward * fallbackDistance);
-
         ready = true;
     }
 
@@ -44,50 +45,72 @@ public class RayGrab : MonoBehaviour
         if (!ready) return;
 
         float triggerValue = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, OVRInput.Controller.LTouch);
-        Debug.Log($"Trigger Value: {triggerValue}");
 
-        // 1️⃣ Raycast for potential objects (always, for UX)
         Ray pointerRay = new Ray(controllerTransform.position, controllerTransform.forward);
-        hasValidHit = Physics.Raycast(pointerRay, out lastGrabbableHit, fallbackDistance, grabbableLayer);
-        Debug.Log($"Raycast Hit: {hasValidHit}, Hit Object: {(hasValidHit ? lastGrabbableHit.collider.name : "None")}");
 
-        // 2️⃣ Update laser pointer visuals
+        // 🔵 FIRST: Check UI interaction
+        if (Physics.Raycast(pointerRay, out RaycastHit hitAll, fallbackDistance))
+        {
+            Vector3 endPosUI = hitAll.point;
+            laserPointer.SetPosition(0, pointerRay.origin);
+            laserPointer.SetPosition(1, endPosUI);
+
+            if (hitAll.collider.CompareTag("UIButton"))
+            {
+                // UI hover color
+                laserPointer.startColor = laserPointer.endColor = uiHoverColor;
+
+                // Click
+                if (OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.LTouch) &&
+                    Time.time - lastClickTime > clickCooldown)
+                {
+                    Debug.Log("UI Button Clicked: " + hitAll.collider.name);
+                    VRButton btn = hitAll.collider.GetComponent<VRButton>();
+                    if (btn != null)
+                    {
+                        btn.Press();
+                        lastClickTime = Time.time;
+                    }
+                }
+
+                // STOP → don’t grab UI
+                return;
+            }
+        }
+
+        // 🟢 NORMAL GRAB RAYCAST
+        hasValidHit = Physics.Raycast(pointerRay, out lastGrabbableHit, fallbackDistance, grabbableLayer);
+
         Vector3 endPos = hasValidHit ? lastGrabbableHit.point : pointerRay.origin + pointerRay.direction * fallbackDistance;
+
         laserPointer.SetPosition(0, pointerRay.origin);
         laserPointer.SetPosition(1, endPos);
         laserPointer.startColor = laserPointer.endColor = hasValidHit ? hoverColor : inactiveColor;
 
-        // 3️⃣ Handle trigger grab
+        // 🖐 GRAB LOGIC
         if (triggerValue > triggerThreshold)
         {
-            // If not holding anything and we have a valid hit, grab it
             if (grabbedObject == null && hasValidHit)
             {
                 Transform original = lastGrabbableHit.collider.transform;
 
-                // Prevent cloning already spawned objects
                 if (original.parent == parent.transform) return;
 
-                // Create a copy
                 GameObject clone = Instantiate(original.gameObject);
+                clone.transform.SetParent(parent.transform, true);
 
-                // Parent it
-                clone.transform.SetParent(parent.transform);
-
-                // Optional: match position & rotation exactly
                 clone.transform.position = original.position;
                 clone.transform.rotation = original.rotation;
+
                 if (original.gameObject.name == "Star")
                 {
                     original.gameObject.SetActive(false);
                 }
 
-                // Assign as grabbed
                 grabbedObject = clone.transform;
                 grabOffset = Vector3.zero;
             }
 
-            // If holding an object, move it to the surface or fallback
             if (grabbedObject != null)
             {
                 Ray moveRay = new Ray(controllerTransform.position, controllerTransform.forward);
@@ -104,7 +127,6 @@ public class RayGrab : MonoBehaviour
         }
         else
         {
-            // Release object when trigger not pressed
             grabbedObject = null;
         }
     }
