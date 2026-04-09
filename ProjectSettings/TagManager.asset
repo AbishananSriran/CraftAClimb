@@ -32,11 +32,12 @@ TagManager:
     - QDSUIToggleCheckboxRadio
     - RockSet_01
     - ChalkBag
+    - UIButton
   layers:
     - Default
     - TransparentFX
     - Ignore Raycast
-    -
+    - Overlay UI
     - Water
     - UI
     - Interactables
