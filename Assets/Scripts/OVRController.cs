@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class OVRController : MonoBehaviour
@@ -15,7 +17,12 @@ public class OVRController : MonoBehaviour
     public float staminaDrainRate = 1f;
     public float staminaRegenRate = 1.5f;
     public float currentStamina;
+    public float fatigueVibrationFactor = 1f;
+    public float minBeatInterval = 0.2f;
+    public float maxBeatInterval = 1.0f;
+    public float panicModeThreshold = 0.2f;
     bool exhausted = false;
+    float heartbeatTimer = 0f;
 
     // 
     public Interactable touchedItem;
@@ -69,6 +76,11 @@ public class OVRController : MonoBehaviour
         if (gripping && grippedItem != null && grippedItem.isClimbable)
         {
             currentStamina -= staminaDrainRate * Time.deltaTime;
+
+            if (currentStamina <= maxStamina * 0.75f)
+            {
+                FatigueHaptics();
+            }
 
             if (currentStamina <= 0f && !exhausted)
             {
@@ -195,6 +207,8 @@ public class OVRController : MonoBehaviour
         ctrlAnchored = false;
 
         requireGripReset = true;
+
+        HapticClick();
     }
 
     void UseChalk()
@@ -203,6 +217,58 @@ public class OVRController : MonoBehaviour
         {
             chalkParticles.Play();
         }
+    }
+
+
+    void FatigueHaptics()
+    {
+        float staminaPercent = Mathf.Clamp01(currentStamina / maxStamina);
+        float intensity = 1f - staminaPercent;
+        
+        
+        bool isHeartbeatPhase = staminaPercent <= 0.5f;
+        bool isPanicMode = staminaPercent < panicModeThreshold;
+
+        // slow rumble while not very tired
+        if (!isHeartbeatPhase)
+        {
+            float ramp = Mathf.InverseLerp(1f, 0.5f, staminaPercent);
+            ramp *= ramp;
+
+            float rumbleStrength = ramp * fatigueVibrationFactor * 0.4f;
+
+            HapticPulse(rumbleStrength, Time.deltaTime);
+            return;
+        }
+        
+        float heartbeatIntensity = Mathf.InverseLerp(0.5f, 0f, staminaPercent);
+        float interval = Mathf.Lerp(maxBeatInterval, minBeatInterval, intensity);
+        
+        // panic mode activates
+        if (isPanicMode)
+        {
+            interval *= Random.Range(0.7f, 1.3f); // jitter timing
+            fatigueVibrationFactor *= 1.2f;
+        }
+
+        // Timer
+        heartbeatTimer += Time.deltaTime;
+
+        if (heartbeatTimer >= interval)
+        {
+            heartbeatTimer = 0f;
+
+            float pulseStrength = heartbeatIntensity * heartbeatIntensity * fatigueVibrationFactor;
+
+            StartCoroutine(HeartbeatPulse(pulseStrength));
+        }
+    }
+
+    IEnumerator HeartbeatPulse(float strength)
+    {
+        HapticPulse(strength, 0.08f); // first strong beat
+        yield return new WaitForSeconds(0.12f);
+        HapticPulse(strength * 0.6f, 0.06f); // second softer beat
     }
 
     // Simple haptics helpers

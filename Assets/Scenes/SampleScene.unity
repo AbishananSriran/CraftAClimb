@@ -5282,7 +5282,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 3903482225804038112, guid: 0a7d2469f24041c4284c66706f84c45e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 49136242}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 4148778239110795873, guid: 0a7d2469f24041c4284c66706f84c45e, type: 3}
       insertIndex: 1
@@ -8454,6 +8457,11 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 3.0000002, y: 3.000001, z: 0}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!4 &541784903 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3903482225804038112, guid: 0a7d2469f24041c4284c66706f84c45e, type: 3}
+  m_PrefabInstance: {fileID: 350415983}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &543462286
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13457,6 +13465,7 @@ MonoBehaviour:
   staminaDrainRate: 1
   staminaRegenRate: 1.5
   currentStamina: 0
+  fatigueVibrationFactor: 50
   touchedItem: {fileID: 0}
   grippedItem: {fileID: 0}
   grippedNormal: {x: 0, y: 0, z: 0}
@@ -13631,15 +13640,16 @@ PrefabInstance:
       propertyPath: _trackingOriginType
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 11400000, guid: 126d619cf4daa52469682f85c1378b4a, type: 3}
+      propertyPath: controllerDrivenHandPosesType
+      value: 2
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 400004, guid: 126d619cf4daa52469682f85c1378b4a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 350415984}
-    - targetCorrespondingSourceObject: {fileID: 459718, guid: 126d619cf4daa52469682f85c1378b4a, type: 3}
-      insertIndex: 0
-      addedObject: {fileID: 49136242}
     - targetCorrespondingSourceObject: {fileID: 459718, guid: 126d619cf4daa52469682f85c1378b4a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 679533583}
@@ -15783,6 +15793,7 @@ MonoBehaviour:
   staminaDrainRate: 1
   staminaRegenRate: 1.5
   currentStamina: 0
+  fatigueVibrationFactor: 50
   touchedItem: {fileID: 0}
   grippedItem: {fileID: 0}
   grippedNormal: {x: 0, y: 0, z: 0}
@@ -29805,7 +29816,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 825897232}
+    m_TransformParent: {fileID: 541784903}
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: c287eab48a4235e4180c126ba0b30b71, type: 3}
       propertyPath: m_LocalScale.x
@@ -29825,11 +29836,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: c287eab48a4235e4180c126ba0b30b71, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.879
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: c287eab48a4235e4180c126ba0b30b71, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.113
+      value: 0.25
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: c287eab48a4235e4180c126ba0b30b71, type: 3}
       propertyPath: m_LocalRotation.w
