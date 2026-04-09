@@ -48,19 +48,7 @@ public class GameManager : MonoBehaviour
             Destroy(boulder.gameObject);
         }
 
-        foreach (Transform child in boulders.transform)
-        {
-            Destroy(child.gameObject);
-        }
-
-        if (star != null)
-        {
-            Destroy(star.gameObject);
-            star = null;
-        }
-
         started = false;
-        originalStar.SetActive(true);
         uiCanvas.SetActive(true);
     }
 }
