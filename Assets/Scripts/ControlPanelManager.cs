@@ -12,7 +12,7 @@ public class ControlPanelManager : MonoBehaviour
     // Dial -> particle hue
     public void OnDialHueChanged(float t)
     {
-        
+
     }
 
     // Slider -> particle emission rate (0..1)
@@ -23,6 +23,10 @@ public class ControlPanelManager : MonoBehaviour
 
         foreach (Transform child in target.transform)
         {
+            if (child.gameObject.name == "Star")
+            {
+                continue;
+            }
             child.localScale = newScale;
             Debug.Log($"Set scale of {child.name} to {newScale}");
         }
@@ -43,7 +47,7 @@ public class ControlPanelManager : MonoBehaviour
     // Hinge Slider -> onValueChanged(float 0..1) 
     public void OnRotationSpeedChanged(float t)
     {
-        
+
     }
 
     void Update()
