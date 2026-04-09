@@ -77,10 +77,13 @@ public class RayGrab : MonoBehaviour
                 // Optional: match position & rotation exactly
                 clone.transform.position = original.position;
                 clone.transform.rotation = original.rotation;
+                if (original.gameObject.name == "Star")
+                {
+                    original.gameObject.SetActive(false);
+                }
 
                 // Assign as grabbed
                 grabbedObject = clone.transform;
-
                 grabOffset = Vector3.zero;
             }
 
