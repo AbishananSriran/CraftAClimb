@@ -39,13 +39,7 @@ Inspired by similar VR experiences such as *The Climb*, this project integrates 
 
 ---
 
-## 🎥 Project Video
-
-```html
-<video src="https://github.com/AbishananSriran/craft-a-climb-docs/blob/main/video/demo.mp4" type="video/mp4"></video>
-```
-
-### 🌐 Google Drive Link
+## 🎥 Project Video: Google Drive Link
 
 Watch the demo online:
 🔗 [https://drive.google.com/file/d/1TOa-ZGmRWj3WOWgi5fQEeC8XcTlFA3WK/view?usp=sharing](https://drive.google.com/file/d/1TOa-ZGmRWj3WOWgi5fQEeC8XcTlFA3WK/view?usp=sharing)
