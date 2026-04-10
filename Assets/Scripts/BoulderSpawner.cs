@@ -18,6 +18,7 @@ public class BoulderSpawner : MonoBehaviour
     public float spawnHeightOffset = 10f;
     public float spawnWidthClearance = 2f;
     public float spawnWidthDistance = 5f;
+    public AudioClip spawnSoundClip;
 
     private float spawnTimer = 0f;
 
@@ -40,12 +41,14 @@ public class BoulderSpawner : MonoBehaviour
 
         // Pick random spawn point
         float randomSpawnWidth = Random.Range(-spawnWidthDistance, spawnWidthDistance);
-        Vector3 spawnWidthOffset = (randomSpawnWidth + Mathf.Sign(randomSpawnWidth) * spawnWidthClearance) * player.right;
+        Vector3 spawnWidthOffset = (randomSpawnWidth + Mathf.Sign(randomSpawnWidth) * spawnWidthClearance) * Vector3.right;
         Vector3 spawnOffset = spawnWidthOffset + spawnHeightOffset * Vector3.up;
         Vector3 spawnPoint = player.position + spawnOffset;
 
         GameObject boulder = selectedPool.Get();
         boulder.transform.position = spawnPoint;
         boulder.transform.rotation = Random.rotation;
+
+        AudioPool.Instance.PlayClip(spawnSoundClip, player.position, 0.5f, spawnRate * 0.75f);
     }
 }

@@ -24,6 +24,7 @@ public class OVRController : MonoBehaviour
     public float panicModeThreshold = 0.2f;
     bool exhausted = false;
     float heartbeatTimer = 0f;
+    [SerializeField] private UnityEngine.UI.Image staminaRing;
 
     // 
     public Interactable touchedItem;
@@ -51,7 +52,6 @@ public class OVRController : MonoBehaviour
     {
         if (inChalkBag)
         {
-            Debug.Log("chalk bag working bruh");
             UseChalk();
         }
 
@@ -75,6 +75,7 @@ public class OVRController : MonoBehaviour
         if (staminaOn)
         {
             ManageStamina();
+            DisplayStamina();
         }
         
     }
@@ -135,7 +136,6 @@ public class OVRController : MonoBehaviour
     {
         if (other.CompareTag("ChalkBag"))
         {
-            Debug.Log("Chalk bag exit");
             inChalkBag = false;
         }
 
@@ -225,15 +225,33 @@ public class OVRController : MonoBehaviour
         }
     }
 
+    public void ReduceStamina(float factor)
+    {
+        currentStamina *= factor;
+    }
+
+    void DisplayStamina()
+    {
+        float staminaPercent = Mathf.Clamp01(currentStamina / maxStamina);
+
+        staminaRing.fillAmount = Mathf.Lerp(
+            staminaRing.fillAmount,
+            staminaPercent,
+            Time.deltaTime * 10f
+        );
+        staminaRing.color = Color.Lerp(Color.red, Color.green, staminaPercent);
+    }
+
     void UseChalk()
     {
-        Debug.Log("chalkParticles working bruh " + chalkParticles);
+        currentStamina *= 1.5f;
+        currentStamina = Mathf.Min(currentStamina, maxStamina);
+        
         if (chalkParticles != null)
         {
             chalkParticles.Play();
         }
     }
-
 
     void FatigueHaptics()
     {

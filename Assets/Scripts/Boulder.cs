@@ -5,7 +5,7 @@ public class Boulder : MonoBehaviour
     public float despawnTime = 5f;
     private BoulderPool pool;
     private Rigidbody rb;
-    private float timer;
+    private float timer = 0f;
 
     void Awake()
     {
@@ -21,6 +21,17 @@ public class Boulder : MonoBehaviour
         }
     }
 
+    void OnTriggerEnter(Collider other)
+    {
+        var hitReceiver = other.GetComponentInParent<IPlayerHitReceiver>();
+
+        if (hitReceiver != null)
+        {
+            hitReceiver.OnHitByBoulder();
+            ReturnToPool();
+        }
+    }
+
     public void SetPool(BoulderPool poolRef)
     {
         pool = poolRef;
@@ -28,6 +39,7 @@ public class Boulder : MonoBehaviour
 
     public void ReturnToPool()
     {
+        timer = 0;
         ResetVelocity();
         pool.Return(gameObject);
     }
