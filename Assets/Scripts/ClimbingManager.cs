@@ -17,7 +17,19 @@
         [SerializeField] float smoothFactor = 0.2f;
         [SerializeField] float deadzone = 0.002f;
         [SerializeField] float maxDelta = 0.1f;
-        Vector3 smoothedDelta;
+        private Vector3 smoothedDelta;
+
+
+        [Header("Jump Settings")]
+
+        [SerializeField] private float jumpMultiplier = 2.0f;
+        [SerializeField] private float jumpThreshold = 0.5f;
+        [SerializeField] private float maxJumpForce = 1f;
+        [SerializeField] private float jumpBufferTimer = 1f;
+
+        private Vector3 handVelocity;
+        private Vector3 bufferedVelocity = Vector3.zero;
+        private float bufferTimer = 0f;
 
         [Header("Fake Gravity")]
         [SerializeField] private float gravity = -9.8f;
@@ -78,6 +90,22 @@
         {
             if (!isClimbing) return;
 
+            // Apply jump impulse based on hand velocity
+            Vector3 planarVelocity = Vector3.ProjectOnPlane(bufferedVelocity, activateHand.grippedNormal);
+
+            if (planarVelocity.magnitude > jumpThreshold)
+            {
+                Vector3 jumpForce = -planarVelocity * jumpMultiplier;
+
+                // Clamp jump strength
+                jumpForce = Vector3.ClampMagnitude(jumpForce, maxJumpForce);
+
+                // Apply vertical boost too
+                verticalVelocity = Mathf.Clamp(-handVelocity.y * jumpMultiplier, 0f, maxJumpForce);
+
+                cameraRig.position += jumpForce * Time.fixedDeltaTime;
+            }
+
             isClimbing = false;
             activateHand = null;
         }
@@ -100,7 +128,27 @@
             }
 
             Vector3 currentHandPos = activateHand.GetPosition();
+
             Vector3 handDelta = currentHandPos - lastHandPosition;
+
+            // convert to velocity
+            handVelocity = handDelta / Time.fixedDeltaTime;
+
+            if (handVelocity.magnitude > bufferedVelocity.magnitude)
+            {
+                bufferedVelocity = handVelocity;
+                bufferTimer = jumpBufferTimer;
+            }
+
+            // countdown buffer
+            if (bufferTimer > 0f)
+            {
+                bufferTimer -= Time.fixedDeltaTime;
+            }
+            else
+            {
+                bufferedVelocity = Vector3.zero;
+            }
 
             // Project onto wall plane so no forward/back movement
             handDelta = Vector3.ProjectOnPlane(handDelta, activateHand.grippedNormal);
