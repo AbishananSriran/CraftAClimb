@@ -11,8 +11,6 @@ public class SimpleGemsAnim : MonoBehaviour
     public bool canTouch = false;
 
     public float rotationSpeed = 90f; // Degrees per second
-    private Vector3 initialPosition;
-    private float floatTimer;
     public event Action OnTouched;
 
     void OnTriggerEnter(Collider other)

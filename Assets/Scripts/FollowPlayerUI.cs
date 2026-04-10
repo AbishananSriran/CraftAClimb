@@ -3,7 +3,7 @@ using UnityEngine;
 public class FollowPlayerUI : MonoBehaviour
 {
     public Transform head; // CenterEyeAnchor
-    public float distance = 1.5f;
+    public float distance = 0.5f;
     public float heightOffset = -0.2f;
     public float smoothSpeed = 5f;
 

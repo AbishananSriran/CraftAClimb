@@ -81,7 +81,6 @@ public class Lever : Interactable
     public override void OnGripBegin(OVRController ctrl)
     {
 
-        Debug.Log("Grip working");
         controller = ctrl;
         isGripping = true;
 

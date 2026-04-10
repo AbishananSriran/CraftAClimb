@@ -2,9 +2,10 @@ using UnityEngine;
 
 public class Boulder : MonoBehaviour
 {
-    public float despawnHeight = -1f;
+    public float despawnTime = 5f;
     private BoulderPool pool;
     private Rigidbody rb;
+    private float timer;
 
     void Awake()
     {
@@ -13,7 +14,8 @@ public class Boulder : MonoBehaviour
 
     void Update()
     {
-        if (transform.position.y < despawnHeight)
+        timer += Time.deltaTime;
+        if (timer >= despawnTime)
         {
             ReturnToPool();
         }

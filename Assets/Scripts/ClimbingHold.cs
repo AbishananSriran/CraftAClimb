@@ -29,8 +29,6 @@ public class ClimbingHold : Interactable
 
     public override void OnGripBegin(OVRController ctrl)
     {
-        Debug.Log("grabbing");
-
         controller = ctrl;
 
         IsGrabbed = true;

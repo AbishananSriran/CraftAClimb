@@ -7,10 +7,12 @@ public class GameManager : MonoBehaviour
     public GameObject ovrCameraRig;
     public GameObject boulders;
     public SimpleGemsAnim star;
+    public RayGrab rayGrab;
     public GameObject originalStar;
     public GameObject obstacles;
     public float health = 100f;
     public Vector3 origPosition = new Vector3(0, 0.5f, 0);
+    public BoulderSpawner boulderSpawner;
 
 
     public void StartGame()
@@ -22,16 +24,18 @@ public class GameManager : MonoBehaviour
     }
 
     // Update is called once per frame
-    private void OnEnable()
+    public void SetupListener()
     {
         if (star != null)
             star.OnTouched += HandleTouched;
     }
 
-    private void OnDisable()
+    public void KillListener()
     {
         if (star != null)
             star.OnTouched -= HandleTouched; // always unsubscribe
+
+        star = null;
     }
 
     private void HandleTouched()
@@ -50,5 +54,8 @@ public class GameManager : MonoBehaviour
 
         started = false;
         uiCanvas.SetActive(true);
+        rayGrab.ready = true;
+        boulderSpawner.enabled = false;
+
     }
 }

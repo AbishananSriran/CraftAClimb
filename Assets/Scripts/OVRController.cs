@@ -13,6 +13,7 @@ public class OVRController : MonoBehaviour
     public OVRInput.Button gripButton = OVRInput.Button.PrimaryHandTrigger;
 
     [Header("Stamina")]
+    public bool staminaOn = false;
     public float maxStamina = 5f;
     public float staminaDrainRate = 1f;
     public float staminaRegenRate = 1.5f;
@@ -27,6 +28,10 @@ public class OVRController : MonoBehaviour
     // 
     public Interactable touchedItem;
     public Interactable grippedItem;
+    public Vector3 grippedNormal;
+    public bool ctrlAnchored = false;
+    public Vector3 ctrlOffset;
+
     OVRInput.Controller Ctrl =>
         (hand == Hand.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
 
@@ -46,8 +51,8 @@ public class OVRController : MonoBehaviour
     {
         if (inChalkBag)
         {
+            Debug.Log("chalk bag working bruh");
             UseChalk();
-            Debug.Log("using chalkf");
         }
 
         // // Release gripped item on grip release
@@ -57,63 +62,42 @@ public class OVRController : MonoBehaviour
         if (requireGripReset && grip < 0.1f)
         {
             requireGripReset = false;
-            Debug.Log("grip reset");
         }
 
         if (grippedItem != null && grip < 0.1f && gripping)
         {
-            Debug.Log("Release grip");
             grippedItem.OnGripEnd(this);
             grippedItem = null;
             gripping = false;
+            ctrlAnchored = false;
         }
 
-        if (gripping && grippedItem != null && grippedItem.isClimbable)
+        if (staminaOn)
         {
-            currentStamina -= staminaDrainRate * Time.deltaTime;
-
-            if (currentStamina <= maxStamina * 0.75f)
-            {
-                FatigueHaptics();
-            }
-
-            if (currentStamina <= 0f && !exhausted)
-            {
-                exhausted = true;
-                currentStamina = 0f;
-
-                ForceRelease();
-            }
+            ManageStamina();
         }
-        else
-        {
-            currentStamina += staminaRegenRate * Time.deltaTime;
-            currentStamina = Mathf.Min(currentStamina, maxStamina);
-
-            if (currentStamina > 0.2f * maxStamina)
-            {
-                exhausted = false;
-            }
-        }
-
+        
     }
 
     private void OnTriggerEnter(Collider other)
     {
+        Debug.Log(other + " is " + other.CompareTag("ChalkBag"));
+
         if (other.CompareTag("ChalkBag"))
         {
             inChalkBag = true;
-            Debug.Log("entered chalk bag");
         }
 
         if (other.attachedRigidbody == null) return;
 
         var interactable = other.attachedRigidbody.GetComponent<Interactable>();
-        grippedNormal = interactable.GetComponentInParent<Transform>().transform.forward;
 
+        if (interactable != null)
+        {
+            grippedNormal = interactable.transform.forward;
+        }
         if (interactable == null || !interactable.enabled) return;
 
-        //Debug.Log("Call Dial on Touch Enter");
         interactable.OnTouchEnter(this);
     }
 
@@ -121,20 +105,11 @@ public class OVRController : MonoBehaviour
     private void OnTriggerStay(Collider other)
     {
         if (other.attachedRigidbody == null) return;
+
         var interactable = other.attachedRigidbody.GetComponent<Interactable>();
-
-        grippedNormal = interactable.GetComponentInParent<Transform>().transform.forward;
-
-        //Debug.Log("Collided with Dial");
-        var interactable = other.attachedRigidbody != null
-            ? other.attachedRigidbody.GetComponent<Interactable>() : null;
-
-        if (interactable == null)
-        {
-            interactable = other.GetComponentInParent<Interactable>();
-        }
-
         if (interactable == null || !interactable.enabled) return;
+        
+        grippedNormal = interactable.GetComponent<Transform>().transform.forward;
 
         // Already gripping it
         if (grippedItem == interactable) return;
@@ -142,24 +117,25 @@ public class OVRController : MonoBehaviour
         float grip = GetGripValue();
         bool IsGrippingNow = grip > 0.5f;
 
-        bool grip = gripValue > 0.5f;
-
         // If grip trigger held and we haven't already set up grip  
         if (IsGrippingNow && !gripping && !requireGripReset && !exhausted)
         {
             gripping = true;
             grippedItem = interactable;
             grippedItem.OnGripBegin(this);
+
+            ctrlOffset = GetPosition() - grippedItem.transform.position;
+            ctrlAnchored = true;
         }
 
         interactable.OnTouchStay(this);
-
     }
 
     private void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("ChalkBag"))
         {
+            Debug.Log("Chalk bag exit");
             inChalkBag = false;
         }
 
@@ -170,8 +146,11 @@ public class OVRController : MonoBehaviour
         if (gripping && grippedItem != null)
         {
             grippedItem.OnGripEnd(this);
+            grippedItem = null;
             gripping = false;
+            ctrlAnchored = false;
         }
+
         interactable.OnTouchExit(this);
     }
 
@@ -201,7 +180,6 @@ public class OVRController : MonoBehaviour
 
     public void ForceRelease()
     {
-        Debug.Log("ovr force release");
         if (grippedItem != null)
         {
             grippedItem.OnGripEnd(this);
@@ -216,8 +194,40 @@ public class OVRController : MonoBehaviour
         HapticClick();
     }
 
+    void ManageStamina()
+    {
+        if (gripping && grippedItem != null && grippedItem.isClimbable)
+        {
+            currentStamina -= staminaDrainRate * Time.deltaTime;
+
+            if (currentStamina <= maxStamina * 0.75f)
+            {
+                FatigueHaptics();
+            }
+
+            if (currentStamina <= 0f && !exhausted)
+            {
+                exhausted = true;
+                currentStamina = 0f;
+
+                ForceRelease();
+            }
+        }
+        else
+        {
+            currentStamina += staminaRegenRate * Time.deltaTime;
+            currentStamina = Mathf.Min(currentStamina, maxStamina);
+
+            if (currentStamina > 0.2f * maxStamina)
+            {
+                exhausted = false;
+            }
+        }
+    }
+
     void UseChalk()
     {
+        Debug.Log("chalkParticles working bruh " + chalkParticles);
         if (chalkParticles != null)
         {
             chalkParticles.Play();
@@ -229,8 +239,8 @@ public class OVRController : MonoBehaviour
     {
         float staminaPercent = Mathf.Clamp01(currentStamina / maxStamina);
         float intensity = 1f - staminaPercent;
-
-
+        
+        
         bool isHeartbeatPhase = staminaPercent <= 0.5f;
         bool isPanicMode = staminaPercent < panicModeThreshold;
 
@@ -245,10 +255,10 @@ public class OVRController : MonoBehaviour
             HapticPulse(rumbleStrength, Time.deltaTime);
             return;
         }
-
+        
         float heartbeatIntensity = Mathf.InverseLerp(0.5f, 0f, staminaPercent);
         float interval = Mathf.Lerp(maxBeatInterval, minBeatInterval, intensity);
-
+        
         // panic mode activates
         if (isPanicMode)
         {

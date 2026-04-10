@@ -8,6 +8,9 @@ public class TrashBin : MonoBehaviour
     [Header("Star Object To Spawn")]
     public GameObject star;
 
+    [Header("Game Manager")]
+    public GameManager gameManager;
+
 
     // Make sure your bin collider has 'Is Trigger' checked
     private void OnTriggerEnter(Collider other)
@@ -24,6 +27,7 @@ public class TrashBin : MonoBehaviour
             Destroy(child.gameObject);
         }
 
+        gameManager.KillListener();
         star.SetActive(true);
     }
 }

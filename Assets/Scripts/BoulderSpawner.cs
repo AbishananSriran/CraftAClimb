@@ -34,7 +34,6 @@ public class BoulderSpawner : MonoBehaviour
 
     public void SpawnBoulder()
     {
-        Debug.Log("spawning");
         // Pick random boulder type
         int typeIndex = Random.Range(0, boulderTypes.Length);
         BoulderPool selectedPool = boulderTypes[typeIndex].pool;

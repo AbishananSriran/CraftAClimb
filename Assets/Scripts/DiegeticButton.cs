@@ -43,6 +43,8 @@ public class DiegeticButton : Interactable
 
     [Header("Events")]
     public UnityEvent onPressed; // call using onPressed?.Invoke();
+    public bool bouldersFalling = false;
+    public BoulderSpawner boulderSpawner;
 
     // Stored rest position of the button cap (local to parent).
     Vector3 restLocalPos;
@@ -55,8 +57,12 @@ public class DiegeticButton : Interactable
 
     // "Armed" means we crossed the threshold and will fire event on release.
     bool armed;
-    bool armedTicked;
     float nextAllowedTime;
+
+    public void OnFallingBoulders(bool movable)
+    {
+        bouldersFalling = movable;
+    } 
 
     void Awake()
     {
@@ -106,6 +112,8 @@ public class DiegeticButton : Interactable
                 armed = true;
                 rayGrabToDisable.ready = false;
                 ovrCameraRig.transform.position = startPosition.transform.position;
+                boulderSpawner.enabled = bouldersFalling;
+
 
                 if (haptics)
                 {
@@ -125,7 +133,6 @@ public class DiegeticButton : Interactable
             if (pressDepth <= 0.005f)
             {
                 armed = false;
-                armedTicked = false;
             }
         }
 
@@ -141,7 +148,6 @@ public class DiegeticButton : Interactable
 
         // Reset press state.
         armed = false;
-        armedTicked = false;
     }
 
     public override void OnTouchExit(OVRController ctrl)
@@ -167,7 +173,6 @@ public class DiegeticButton : Interactable
         // Stop tracking controller. Update() will spring back.
         touchingCtrl = null;
         armed = false;
-        armedTicked = false;
     }
 
     Vector3 GetAxisLocal()

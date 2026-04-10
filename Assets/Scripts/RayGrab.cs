@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class RayGrab : MonoBehaviour
 {
@@ -9,10 +10,14 @@ public class RayGrab : MonoBehaviour
     public float fallbackDistance = 3f;
     public float moveSpeed = 15f;
     public float triggerThreshold = 0.8f;
+    public bool newObjectsMovable = false;
     public bool ready = false;
 
     [Header("Boulders Parent")]
     public GameObject parent;
+
+    [Header("GameManager")]
+    public GameManager gameManager;
 
     [Header("Laser Pointer")]
     public LineRenderer laserPointer;
@@ -40,6 +45,11 @@ public class RayGrab : MonoBehaviour
         ready = true;
     }
 
+    public void OnMovable(bool movable)
+    {
+        newObjectsMovable = movable;
+    } 
+
     void Update()
     {
         if (!ready) return;
@@ -49,7 +59,7 @@ public class RayGrab : MonoBehaviour
         Ray pointerRay = new Ray(controllerTransform.position, controllerTransform.forward);
 
         // 🔵 FIRST: Check UI interaction
-        if (Physics.Raycast(pointerRay, out RaycastHit hitAll, fallbackDistance))
+        if (Physics.Raycast(pointerRay, out RaycastHit hitAll))
         {
             Vector3 endPosUI = hitAll.point;
             laserPointer.SetPosition(0, pointerRay.origin);
@@ -64,7 +74,6 @@ public class RayGrab : MonoBehaviour
                 if (OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.LTouch) &&
                     Time.time - lastClickTime > clickCooldown)
                 {
-                    Debug.Log("UI Button Clicked: " + hitAll.collider.name);
                     VRButton btn = hitAll.collider.GetComponent<VRButton>();
                     if (btn != null)
                     {
@@ -74,6 +83,25 @@ public class RayGrab : MonoBehaviour
                 }
 
                 // STOP → don’t grab UI
+                return;
+            }
+
+
+            // ✅ NEW: Scroll View detection
+            if (hitAll.collider.CompareTag("ScrollView"))
+            {
+                ScrollRect scrollRect = hitAll.collider.gameObject.GetComponent<ScrollRect>();
+
+                laserPointer.startColor = laserPointer.endColor = uiHoverColor;
+
+                // Use thumbstick Y axis for scrolling
+                float scrollInput = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick).y;
+
+                if (Mathf.Abs(scrollInput) > 0.1f)
+                {
+                    scrollRect.verticalNormalizedPosition += scrollInput * Time.deltaTime;
+                }
+
                 return;
             }
         }
@@ -94,21 +122,27 @@ public class RayGrab : MonoBehaviour
             {
                 Transform original = lastGrabbableHit.collider.transform;
 
-                if (original.parent == parent.transform) return;
-
-                GameObject clone = Instantiate(original.gameObject);
-                clone.transform.SetParent(parent.transform, true);
-
-                clone.transform.position = original.position;
-                clone.transform.rotation = original.rotation;
-
-                if (original.gameObject.name == "Star")
+                if (original.parent == parent.transform)
                 {
-                    original.gameObject.SetActive(false);
-                }
+                    grabbedObject = original;
+                    grabOffset = Vector3.zero;   
+                } else {
+                    GameObject clone = Instantiate(original.gameObject);
+                    clone.transform.SetParent(parent.transform, true);
 
-                grabbedObject = clone.transform;
-                grabOffset = Vector3.zero;
+                    clone.transform.position = original.position;
+                    clone.transform.rotation = original.rotation;
+
+                    if (original.gameObject.name == "Star")
+                    {
+                        original.gameObject.SetActive(false);
+                        gameManager.star = clone.GetComponent<SimpleGemsAnim>();
+                        gameManager.SetupListener();
+                    }
+
+                    grabbedObject = clone.transform;
+                    grabOffset = Vector3.zero;
+                }
             }
 
             if (grabbedObject != null)
@@ -116,17 +150,25 @@ public class RayGrab : MonoBehaviour
                 Ray moveRay = new Ray(controllerTransform.position, controllerTransform.forward);
                 Vector3 targetPos;
 
-                if (Physics.Raycast(moveRay, out RaycastHit hitMove, fallbackDistance, surfaceLayer))
+                if (Physics.Raycast(moveRay, out RaycastHit hitMove, 1000f, surfaceLayer)){
                     targetPos = hitMove.point + grabOffset;
-                else
+                } else {
                     targetPos = moveRay.origin + moveRay.direction * fallbackDistance + grabOffset;
+                }
 
                 grabbedObject.position = Vector3.Lerp(grabbedObject.position, targetPos, Time.deltaTime * moveSpeed);
-                grabbedObject.rotation = Quaternion.Euler(0f, grabbedObject.rotation.eulerAngles.y, 0f);
             }
         }
         else
         {
+            if (newObjectsMovable)
+            {
+                HoldMover holdMover = grabbedObject.GetComponent<HoldMover>();
+
+                if (holdMover != null) {
+                    holdMover.enabled = true;
+                }
+            }
             grabbedObject = null;
         }
     }
