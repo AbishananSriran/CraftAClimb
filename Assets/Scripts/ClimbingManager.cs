@@ -5,6 +5,7 @@
         [Header("References")]
         [SerializeField] private Transform cameraRig;
 
+
         [Header("Hands")]
         [SerializeField] private OVRController leftHand;
         [SerializeField] private OVRController rightHand;
@@ -16,23 +17,35 @@
         [SerializeField] float smoothFactor = 0.2f;
         [SerializeField] float deadzone = 0.002f;
         [SerializeField] float maxDelta = 0.1f;
-        Vector3 smoothedDelta;
+        private Vector3 smoothedDelta;
+
+
+        [Header("Jump Settings")]
+
+        [SerializeField] private float jumpMultiplier = 2.0f;
+        [SerializeField] private float jumpThreshold = 0.5f;
+        [SerializeField] private float maxJumpForce = 1f;
+        [SerializeField] private float jumpBufferTimer = 1f;
+
+        private Vector3 handVelocity;
+        private Vector3 bufferedVelocity = Vector3.zero;
+        private float bufferTimer = 0f;
+
+        [Header("Fake Gravity")]
+        [SerializeField] private float gravity = -9.8f;
+        [SerializeField] private float maxFallSpeed = -20f;
+        [SerializeField] private float groundY = 0f;
+
+        private float verticalVelocity = 0f;
 
         private bool isClimbing = false;
         private OVRController activateHand = null;
 
         private Vector3 lastHandPosition;
-        private Vector3 velocity;
-        private Vector3 climbNormal;
 
-        // Start is called once before the first execution of Update after the MonoBehaviour is created
-        void Start()
-        {
 
-        }
-
-        // Update is called once per frame
-        void Update()
+    // Update is called once per frame
+    void Update()
         {
             if (!isClimbing)
             {
@@ -50,7 +63,12 @@
         {
             if (isClimbing)
             {
+                verticalVelocity = 0f;
                 ApplyClimbingMovement();
+            }
+            else
+            {
+                ApplyGravity();
             }
         }
 
@@ -71,6 +89,22 @@
         private void StopClimbing()
         {
             if (!isClimbing) return;
+
+            // Apply jump impulse based on hand velocity
+            Vector3 planarVelocity = Vector3.ProjectOnPlane(bufferedVelocity, activateHand.grippedNormal);
+
+            if (planarVelocity.magnitude > jumpThreshold)
+            {
+                Vector3 jumpForce = -planarVelocity * jumpMultiplier;
+
+                // Clamp jump strength
+                jumpForce = Vector3.ClampMagnitude(jumpForce, maxJumpForce);
+
+                // Apply vertical boost too
+                verticalVelocity = Mathf.Clamp(-handVelocity.y * jumpMultiplier, 0f, maxJumpForce);
+
+                cameraRig.position += jumpForce * Time.fixedDeltaTime;
+            }
 
             isClimbing = false;
             activateHand = null;
@@ -94,7 +128,27 @@
             }
 
             Vector3 currentHandPos = activateHand.GetPosition();
+
             Vector3 handDelta = currentHandPos - lastHandPosition;
+
+            // convert to velocity
+            handVelocity = handDelta / Time.fixedDeltaTime;
+
+            if (handVelocity.magnitude > bufferedVelocity.magnitude)
+            {
+                bufferedVelocity = handVelocity;
+                bufferTimer = jumpBufferTimer;
+            }
+
+            // countdown buffer
+            if (bufferTimer > 0f)
+            {
+                bufferTimer -= Time.fixedDeltaTime;
+            }
+            else
+            {
+                bufferedVelocity = Vector3.zero;
+            }
 
             // Project onto wall plane so no forward/back movement
             handDelta = Vector3.ProjectOnPlane(handDelta, activateHand.grippedNormal);
@@ -120,6 +174,30 @@
 
             // 7. Update last hand position
             lastHandPosition = currentHandPos;
+        }
+
+        private void ApplyGravity()
+        {
+            if (cameraRig.position.y <= groundY)
+            {
+                verticalVelocity = 0f;
+                Vector3 pos = cameraRig.position;
+                pos.y = groundY;
+                cameraRig.position = pos;
+                return;
+            }
+
+            // Apply gravity acceleration
+            verticalVelocity += gravity * Time.fixedDeltaTime;
+
+            // Clamp fall speed
+            if (verticalVelocity < maxFallSpeed)
+                verticalVelocity = maxFallSpeed;
+
+            // Apply movement downward
+            Vector3 gravityMove = new Vector3(0f, verticalVelocity, 0f) * Time.fixedDeltaTime;
+
+            cameraRig.position += gravityMove;
         }
 
     }

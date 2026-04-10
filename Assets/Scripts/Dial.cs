@@ -6,7 +6,7 @@ public class Dial : Interactable
 {
     [Header("Range")]
     [Tooltip("Half-range in degrees. Example: 45 means dial can go from -45..+45. 0 = unlimited.")]
-    public float degreeRange = 45f;
+    public float degreeRange = 60f;
 
     [Header("Feel")]
     [Tooltip("How fast the dial follows your wrist while gripping. 0 = instant.")]
@@ -14,6 +14,8 @@ public class Dial : Interactable
 
     [Tooltip("Release grip if controller drifts too far from dial (meters).")]
     public float breakDistance = 0.40f;
+
+    public float deadZone = 0.25f;    // 3 mm
 
     [Header("Output")]
     [Tooltip("Signed dial angle in degrees (about local Y axis).")]
@@ -33,6 +35,7 @@ public class Dial : Interactable
     OVRController controller;                 // controller currently gripping
     Vector3 dialRightInCntlrLocal;            // dial reference dir stored in controller local space
 
+    Quaternion quaternionAtStart;
     float angleAtGrab;                        // dial angle when grip begins
     float controllerAngleAtGrab;              // controller-implied angle when grip begins (prevents snapping)
 
@@ -56,6 +59,7 @@ public class Dial : Interactable
 
         // Set the dial
         ApplyAngle(angleDeg);
+
         // Output the value to the control panel via an event
         Emit01IfChanged(force: true);
     }
@@ -72,7 +76,9 @@ public class Dial : Interactable
         // TODO - Store the dial's "reference direction" (dial's right vector) in controller-local space.
         // Later, we transform it back out to see how the controller has rotated.
         // Store it in dialRightInCntlrLocal
-        dialRightInCntlrLocal = c.transform.InverseTransformDirection(transform.right);
+        dialRightInCntlrLocal = controller.transform.InverseTransformDirection(transform.right);
+
+        quaternionAtStart = transform.rotation;
 
         // Save dial angle at grab start
         angleAtGrab = angleDeg;
@@ -103,16 +109,15 @@ public class Dial : Interactable
 
         // TODO - Compute how much did the controller rotated since grab? (wrap-safe)
         // Hint: use Mathf.DeltaAngle
-        float deltaControllerAngle = Mathf.DeltaAngle(controllerAngleAtGrab, controllerAngleNow);
+        float deltaAngle = Mathf.DeltaAngle(controllerAngleAtGrab, controllerAngleNow);
+        if (Mathf.Abs(deltaAngle) < deadZone) deltaAngle = 0;
 
         // TODO - Compute target dial angle = dial angle at grab + delta
-        float targetAngle = angleAtGrab + deltaControllerAngle;
+        float targetAngle = angleAtGrab + deltaAngle;
 
         // TODO - Clamp it if bounded using degree range
-        if (degreeRange > 0f)
-        {
-            targetAngle = Mathf.Clamp(targetAngle, -degreeRange, degreeRange);
-        }
+        if (degreeRange > 0f) targetAngle = Mathf.Clamp(targetAngle, -degreeRange, degreeRange);
+
 
         // TODO - Smooth follow (optional) - update angleDeg with target angle computed above
         if (followSpeed <= 0f)
@@ -121,9 +126,8 @@ public class Dial : Interactable
         {
             // TODO - replace with Mathf.LerpAngle to target angle
             // (don't forget to multiply follow speed by Time.deltaTime)
-            angleDeg = Mathf.LerpAngle(angleDeg, targetAngle, followSpeed * Time.deltaTime);
+            angleDeg = Mathf.LerpAngle(angleAtGrab, targetAngle, followSpeed * Time.deltaTime);
         }
-
         // Apply to transform + emit value
         ApplyAngle(angleDeg);
 
@@ -138,24 +142,29 @@ public class Dial : Interactable
     float ComputeControllerAngle()
     {
         // TODO - Take the saved dialRightInCntlrLocal and transform it into WORLD space
-        Vector3 dialRightInWorld = controller.transform.TransformDirection(dialRightInCntlrLocal);
+        Vector3 worldRight = controller.transform.TransformDirection(dialRightInCntlrLocal);
 
         // TODO - Then bring this world direction vector into the *dial's* LOCAL space
-        Vector3 dialRightInDialLocal = transform.InverseTransformDirection(dialRightInWorld);
+        Vector3 rightInDialLocal = transform.InverseTransformDirection(worldRight);
 
         // TODO - We only care about rotation around dial local Y, so we then project onto the XZ plane
-        Vector3 projected = Vector3.ProjectOnPlane(dialRightInDialLocal, Vector3.up);
+        Vector3 projected = Vector3.ProjectOnPlane(rightInDialLocal, transform.up).normalized;
 
         // Use Atan2 to give the angle of this projected vector in the dial XZ plane (signed)
         // Convert to degrees and Normalize180
-        return Mathf.Atan2(projected.z, projected.x) * Mathf.Rad2Deg;
+        float rads = Mathf.Atan2(projected.x, projected.z);
+        float degs = rads * Mathf.Rad2Deg;
+
+        degs = Normalize180(degs);
+        return degs;
     }
 
     void ApplyAngle(float a)
     {
         // TODO - Update dial local rotation
         // Use a Quaternion.AngleAxis to avoid 0/360 Euler snapping (i.e. convert to quat, use Vector3.up as axis)
-        transform.localRotation = Quaternion.AngleAxis(a, Vector3.up);
+
+        transform.localRotation = Quaternion.Euler(0f, a, 0f);
     }
 
     // ---------------- Output mapping ----------------

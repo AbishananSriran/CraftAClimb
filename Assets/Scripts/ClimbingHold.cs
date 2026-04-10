@@ -7,6 +7,9 @@ public class ClimbingHold : Interactable
 {
     public enum LocalAxis { X, Y, Z }
 
+    [Header("Grip Fatigue")]
+    public float maxGripTime = 5f;
+
     [Header("Haptics (optional)")]
     public bool haptics = true;
 
@@ -22,11 +25,6 @@ public class ClimbingHold : Interactable
         rb.isKinematic = true;
         rb.useGravity = false;
         isClimbable = true;
-    }
-
-    void Start()
-    {
-
     }
 
     public override void OnGripBegin(OVRController ctrl)
@@ -47,8 +45,7 @@ public class ClimbingHold : Interactable
 
     void Update()
     {
-        if (controller == null) return;
-
+        if (controller == null || !IsGrabbed) return;
 
     }
 

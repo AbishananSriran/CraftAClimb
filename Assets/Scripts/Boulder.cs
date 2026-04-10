@@ -2,9 +2,10 @@ using UnityEngine;
 
 public class Boulder : MonoBehaviour
 {
-    public float despawnHeight = -1f;
+    public float despawnTime = 5f;
     private BoulderPool pool;
     private Rigidbody rb;
+    private float timer = 0f;
 
     void Awake()
     {
@@ -13,8 +14,20 @@ public class Boulder : MonoBehaviour
 
     void Update()
     {
-        if (transform.position.y < despawnHeight)
+        timer += Time.deltaTime;
+        if (timer >= despawnTime)
         {
+            ReturnToPool();
+        }
+    }
+
+    void OnTriggerEnter(Collider other)
+    {
+        var hitReceiver = other.GetComponentInParent<IPlayerHitReceiver>();
+
+        if (hitReceiver != null)
+        {
+            hitReceiver.OnHitByBoulder();
             ReturnToPool();
         }
     }
@@ -26,6 +39,7 @@ public class Boulder : MonoBehaviour
 
     public void ReturnToPool()
     {
+        timer = 0;
         ResetVelocity();
         pool.Return(gameObject);
     }

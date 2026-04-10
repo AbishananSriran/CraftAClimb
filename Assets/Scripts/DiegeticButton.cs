@@ -25,6 +25,15 @@ public class DiegeticButton : Interactable
     [Tooltip("Allowed minimum time between presses.")]
     public float cooldown = 0.15f;
 
+    [Tooltip("RayGrab component to optionally disable while button is pressed.")]
+    public RayGrab rayGrabToDisable;
+
+    [Tooltip("Start Position of the game")]
+    public GameObject startPosition;
+
+    [Tooltip("OVRCameraRig")]
+    public GameObject ovrCameraRig;
+
     [Header("Haptics")]
     public bool haptics = true;
     public float armedTickAmplitude = 0.15f;
@@ -34,6 +43,8 @@ public class DiegeticButton : Interactable
 
     [Header("Events")]
     public UnityEvent onPressed; // call using onPressed?.Invoke();
+    public bool bouldersFalling = false;
+    public BoulderSpawner boulderSpawner;
 
     // Stored rest position of the button cap (local to parent).
     Vector3 restLocalPos;
@@ -46,8 +57,12 @@ public class DiegeticButton : Interactable
 
     // "Armed" means we crossed the threshold and will fire event on release.
     bool armed;
-    bool armedTicked;
     float nextAllowedTime;
+
+    public void OnFallingBoulders(bool movable)
+    {
+        bouldersFalling = movable;
+    } 
 
     void Awake()
     {
@@ -95,6 +110,11 @@ public class DiegeticButton : Interactable
             if (!armed && Time.time >= nextAllowedTime && pressDepth >= maxPressDepth * pressThreshold)
             {
                 armed = true;
+                rayGrabToDisable.ready = false;
+                ovrCameraRig.transform.position = startPosition.transform.position;
+                boulderSpawner.enabled = bouldersFalling;
+
+
                 if (haptics)
                 {
                     touchingCtrl.HapticTick(armedTickAmplitude, armedTickDuration);
@@ -113,7 +133,6 @@ public class DiegeticButton : Interactable
             if (pressDepth <= 0.005f)
             {
                 armed = false;
-                armedTicked = false;
             }
         }
 
@@ -129,7 +148,6 @@ public class DiegeticButton : Interactable
 
         // Reset press state.
         armed = false;
-        armedTicked = false;
     }
 
     public override void OnTouchExit(OVRController ctrl)
@@ -155,7 +173,6 @@ public class DiegeticButton : Interactable
         // Stop tracking controller. Update() will spring back.
         touchingCtrl = null;
         armed = false;
-        armedTicked = false;
     }
 
     Vector3 GetAxisLocal()
