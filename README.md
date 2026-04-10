@@ -2,6 +2,8 @@
 
 Toronto Metropolitan University - Department of Computer Science - CPS643 (Virtual Reality)
 
+Project Website: https://abishanansriran.github.io/craft-a-climb-docs/
+
 ## 📌 Project Overview
 
 **Craft A Climb!** is a virtual reality rock climbing experience designed to simulate a real-life bouldering gym. The project combines a **creative wall-building system** with a **sports simulation**, allowing users to design and climb their own routes.
